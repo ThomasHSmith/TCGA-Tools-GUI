@@ -9,6 +9,7 @@ from matplotlib.backends.backend_qt4agg import (
     NavigationToolbar2QT as NavigationToolbar)
 import numpy as np
 from scipy import stats
+import seaborn as sns
 
 qtCreatorFile = "./TCGA_Tools_UI.ui"
  
@@ -36,6 +37,10 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.log2_checkbox.stateChanged.connect(self.ToggleLog2)
         self.z_transform_checkbox.stateChanged.connect(self.ToggleZScore)
         self.z_cutoff_checkbox.stateChanged.connect(self.ToggleZCutOff)
+        self.generate_heatmap_button.clicked.connect(self.GenerateHeatMap)
+
+
+
         
     def SpecifyRootDataDir(self):
         global choices_dict
@@ -151,6 +156,10 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.canvas.close()
             canvasFull = False
         
+    def addmpl_2(self, fig):
+        self.canvas = FigureCanvas(fig)
+        self.mplvl_2.addWidget(self.canvas)
+        self.canvas.draw()
         
     def PlotHist(self):
         global df_targets, df_targets_z, df_targets_log2, df_targets_log2_z
@@ -174,15 +183,16 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.addmpl(fig1)
         print target
         
+    def GenerateHeatMap(self):
+        fig2 = Figure()
+        ax1f2 = fig2.add_subplot(111)
+        sns.heatmap(df_targets_log2_z,yticklabels=False, xticklabels=True, ax=ax1f2)
+        self.addmpl_2(fig2)
+
+        
         
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
-    
-    #fig1 = Figure()
-    #ax1f1 = fig1.add_subplot(111)
-    #ax1f1.plot(np.random.rand(5))
-    
     window = MyApp()
-    #window.addmpl(fig1)
     window.show()
     sys.exit(app.exec_())

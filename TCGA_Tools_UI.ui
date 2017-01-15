@@ -195,16 +195,6 @@
      <string>z-transform</string>
     </property>
    </widget>
-   <widget class="QTextBrowser" name="output_to_screen">
-    <property name="geometry">
-     <rect>
-      <x>810</x>
-      <y>10</y>
-      <width>401</width>
-      <height>531</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QPushButton" name="find_directory_button">
     <property name="geometry">
      <rect>
@@ -333,6 +323,23 @@
      <string>Cut-off:</string>
     </property>
    </widget>
+   <widget class="QWidget" name="mplwindow_2" native="true">
+    <property name="geometry">
+     <rect>
+      <x>790</x>
+      <y>10</y>
+      <width>441</width>
+      <height>511</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <layout class="QVBoxLayout" name="mplvl_2"/>
+   </widget>
    <zorder>label</zorder>
    <zorder>horizontalLayoutWidget</zorder>
    <zorder>project_choice_menu</zorder>
@@ -345,7 +352,6 @@
    <zorder>log2_checkbox</zorder>
    <zorder>generate_heatmap_button</zorder>
    <zorder>z_transform_checkbox</zorder>
-   <zorder>output_to_screen</zorder>
    <zorder>find_directory_button</zorder>
    <zorder>extract_targets_button</zorder>
    <zorder>load_project_button</zorder>
@@ -355,6 +361,7 @@
    <zorder>plot_hist_button</zorder>
    <zorder>z_cutoff</zorder>
    <zorder>label_3</zorder>
+   <zorder>mplwindow_2</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
