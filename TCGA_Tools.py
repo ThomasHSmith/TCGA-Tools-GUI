@@ -10,16 +10,18 @@ from matplotlib.backends.backend_qt4agg import (
 import numpy as np
 from scipy import stats
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 qtCreatorFile = "./TCGA_Tools_UI.ui"
  
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
  
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
-    global choices_dict
-    global data_dir
-    global df, df_targets, df_targets_log2, df_targets_z, df_targets_log2_z
+    #global choices_dict
+    #global data_dir
+    #global df, df_targets, df_targets_log2, df_targets_z, df_targets_log2_z
     global canvasFull, log2opt, ZScoreOpt, ZCutOffOpt
+    # Default values for checkbox bools
     ZScoreOpt = False
     log2opt = True
     canvasFull = False
@@ -38,7 +40,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.z_transform_checkbox.stateChanged.connect(self.ToggleZScore)
         self.z_cutoff_checkbox.stateChanged.connect(self.ToggleZCutOff)
         self.generate_heatmap_button.clicked.connect(self.GenerateHeatMap)
-
+        self.transform_data_button.clicked.connect(self.TransformData)
+        self.generate_scatterplot_button.clicked.connect(self.GenerateScatterPlot)
+        self.lmplot_button.clicked.connect(self.GeneratelmPlot)
 
 
         
@@ -47,6 +51,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         global data_dir
         data_dir = QtGui.QFileDialog.getExistingDirectory(None, "Select Directory", '/Users/TS_MBP', QtGui.QFileDialog.ShowDirsOnly)
         L = os.listdir(data_dir)
+        self.log_display_box.addItem("Looking for data pickles in %s" % data_dir)
         choices_dict = {}
         for item in L:
             choices_dict[item[:4]] =item
@@ -60,21 +65,24 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         PROJECT = str(self.project_choice_menu.currentText())
         r = str(data_dir)
         print r
-        self.metadata_display_box.addItem("Loading %s dataset..." % PROJECT)
+        self.log_display_box.addItem("Loading %s dataset..." % PROJECT)
         PICKLE_PATH = os.path.join(r, choices_dict[PROJECT])
         print choices_dict[PROJECT]
         df = pd.read_pickle(PICKLE_PATH)
+        self.log_display_box.addItem("Loaded %s!" % PROJECT)
+        self.metadata_display_box.addItem("%s metadata:" % PROJECT)
  	# Convert TCGA classifier codes
 	# 11 - Normal tissue -> -2
 	# 01 - Solid tumor -> 0
 	# 02 - Recurrent solid tumor -> 1
 	# 06 - Mets -> 2
         vals_dict = {'11':'NormalControl', '01':'SolidTumor', '02':'RecurrentSolidTumor', '06':'Metastatic'}
-        df['SampleTypeText'] = df.SampleType.apply(lambda x: vals_dict[x])
-        for item in df.SampleTypeText.unique():
-            msg='%s: %d' % (item, sum(df.SampleTypeText==item))
+        types_list = list(df.SampleType.apply(lambda x: vals_dict[x]))
+        types_set = set(types_list)
+        for sample_type in types_set:
+            msg='%s: %d' % (sample_type, types_list.count(sample_type))
             self.metadata_display_box.addItem(msg)
-        msg='Total: %d\n' % len(df.SampleTypeText)
+        msg='Total: %d\n' % len(types_list)
         self.metadata_display_box.addItem(msg)
 
         
@@ -83,6 +91,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         #targets_dict = {}
         f = open(TARGETS_INFILE, 'r')
         print 'Reading gene targets from: %s' % TARGETS_INFILE
+        self.log_display_box.addItem("Reading genes targets from: %s" % TARGETS_INFILE)
         for line in f:
             words = line.split()
             key =' '.join(words[:-1])
@@ -91,30 +100,57 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.gene_targets_editable_list.appendPlainText(gene_symbol + ' ' + ID)
             #targets_dict[key] = ID
         f.close()
-
+    
     def ExtractTargets(self):
-        global df_targets, df_targets_log2, df_targets_log2_z, df_targets_z
+        global df_targets, df
+        self.log_display_box.addItem("Extracting genes from main dataframe")
         targets_dict = {}
         targets = str(self.gene_targets_editable_list.toPlainText())
         lines = targets.split('\n')
         for line in lines:
             words = line.split()
-            key = words[0]
-            ID = words[-1]
-            targets_dict[key] = ID
+            gene_name = words[0]
+            ensID = words[-1]
+            targets_dict[ensID] = gene_name
 
-        df_targets = pd.DataFrame()
+        df_targets = df.copy()
+        missing_keys = []
         for key in targets_dict:
-            try:
-                df_targets.insert(0, key, df[targets_dict[key]])
-            except KeyError:
-                print '%s (%s) not found in Dataset' % (targets_dict[key], key)
-        df_targets_log2 = df_targets.apply(lambda x: np.log2(x+1))
-        df_targets_log2_z = df_targets_log2.select_dtypes(exclude=['object']).apply(stats.zscore)
-        df_targets_z = df_targets.select_dtypes(exclude=['object']).apply(stats.zscore)
+            if key in df.columns:
+                #df_targets.insert(0, key, df[targets_dict[key]])
+                self.log_display_box.addItem("Found %s (%s) in Dataset" % (key, targets_dict[key]))
+            else:
+                missing_keys.append(key)
+                print '%s (%s) not found in Dataset' % (key, targets_dict[key])
+                self.log_display_box.addItem("%s (%s) not found in Dataset" % (key, targets_dict[key]))
+        # Remove missing keys from targets_dict
+        for key in missing_keys:
+            targets_dict.pop(key)
+
+        METADATA_COLS = ['PtID','TumorStage','SampleType']
+        targets = targets_dict.keys()
+        targets.extend(METADATA_COLS)
+        df_targets = df_targets[targets]
+        df_targets = df_targets.rename(columns=targets_dict)
+        
         self.loaded_targets_list.clear()
         for column in df_targets:
             self.loaded_targets_list.addItem(column)
+	
+        #for key in targets_dict:
+            #try:
+                #df_targets.insert(0, key, df[targets_dict[key]])
+                #self.log_display_box.addItem("Found %s (%s) in Dataset" % (targets_dict[key], key))
+            #except KeyError:
+                #print '%s (%s) not found in Dataset' % (targets_dict[key], key)
+                #self.log_display_box.addItem("%s (%s) not found in Dataset" % (targets_dict[key], key))
+                
+
+        #df_targets.insert( len(df_targets.columns), 'PtID', df['PtID'])
+        #df_targets.insert( len(df_targets.columns), 'TumorStage', df['TumorStage'])
+        #vals_dict = {'11':'NormalControl', '01':'SolidTumor', '02':'RecurrentSolidTumor', '06':'Metastatic'}
+        #df_targets.insert( len(df_targets.columns), 'SampleType', df['SampleType'])
+
 
     def ToggleLog2(self):
         global log2opt
@@ -160,33 +196,85 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.canvas = FigureCanvas(fig)
         self.mplvl_2.addWidget(self.canvas)
         self.canvas.draw()
+
+    def TransformData(self):
+        global df_targets, df_transformed
+        #TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
+        df_transformed = df_targets.copy()
+        value_cols = list(df_transformed.select_dtypes(exclude=['object']))
         
-    def PlotHist(self):
-        global df_targets, df_targets_z, df_targets_log2, df_targets_log2_z
-        target = str(self.loaded_targets_list.currentItem().text())
-        fig1 = Figure()
-        ax1f1 = fig1.add_subplot(111)
-        if (log2opt & ZScoreOpt):
+        
+        if log2opt:
+            df_transformed[value_cols] = df_transformed[value_cols].apply(lambda x: np.log2(x+1))
+            
+        if ZScoreOpt:
+            df_transformed[value_cols] = df_transformed[value_cols].apply(stats.zscore)
             if ZCutOffOpt:
                 Z_CUTOFF = int(self.z_cutoff.text())
-                df_targets_log2_z = df_targets_log2_z[~(df_targets_log2_z > Z_CUTOFF).any(axis=1)]
-                df_targets_log2_z = df_targets_log2_z[~(df_targets_log2_z < -Z_CUTOFF).any(axis=1)]
-                ax1f1.hist(df_targets_log2_z[target])
-            else:
-                ax1f1.hist(df_targets_log2_z[target])
-        elif (log2opt & (not ZScoreOpt)):
-            ax1f1.hist(df_targets_log2[target])
-        elif ((not log2opt) & ZScoreOpt):
-            ax1f1.hist(df_targets_z[target])
-        else:
-            ax1f1.hist(df_targets[target])
+                df_transformed = df_transformed[~(df_transformed[value_cols] > Z_CUTOFF).any(axis=1)]
+                df_transformed = df_transformed[~(df_transformed[value_cols] < -Z_CUTOFF).any(axis=1)]
+        # Insert MetaData
+        #vals_dict = {'11':'NormalControl', '01':'SolidTumor', '02':'RecurrentSolidTumor', '06':'Metastatic'}
+        #df_targets.insert(len(df_targets.columns),'SampleType',meta_col)
+        df_transformed = df_transformed.drop(labels=['PtID','TumorStage'], axis=1)
+        SampleToInt = {'11':-3, '01':0, '06':0, '02':0}
+        df_transformed['SampleType'] = df_transformed['SampleType'].apply(lambda x: SampleToInt[x])
+        ControlTumorConv = {-3:'Control', 0:'Tumor'}
+        df_transformed['Tissue'] = df_transformed['SampleType'].apply(lambda x: ControlTumorConv[x])
+        #target_col = df_transformed[TARGET_GENE]
+        #df_transformed = df_transformed.drop(labels=[TARGET_GENE], axis=1)
+        #df_transformed.insert(0, TARGET_GENE, target_col)
+        #df_transformed = df_transformed.sort_values(TARGET_GENE, ascending=False)
+        #target_col = df_targets[TARGET_GENE]
+        #df_targets.drop(labels=[TARGET_GENE], axis=1, inplace=True)
+        #df_targets.insert(0, TARGET_GENE, target_col)
+        #df_targets = df_targets.sort_values(TARGET_GENE, ascending=False)
+        self.log_display_box.addItem("Finished transforming data")
+        print 'Done processing'
+
+
+
+    def PlotHist(self):
+        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
+        fig1 = Figure()
+        ax1f1 = fig1.add_subplot(111)
+        ax1f1.hist(df_transformed[TARGET_GENE])
         self.addmpl(fig1)
-        print target
-        
+        print TARGET_GENE
+
+    def GenerateScatterPlot(self):
+        selected_genes = self.loaded_targets_list.selectedItems()
+        if len(selected_genes) == 2:
+            gene_x = str(selected_genes[0].text())
+            gene_y = str(selected_genes[1].text())
+            sns.jointplot(x=gene_x, y=gene_y, data=df_transformed, kind='reg', size=10, space=0)
+            plt.show()
+            #self.addmpl_2(fig2)
+        else:
+            print 'Select only 2 genes'
+
+    def GeneratelmPlot(self):
+        selected_genes = self.loaded_targets_list.selectedItems()
+        if len(selected_genes) == 2:
+            gene_x = str(selected_genes[0].text())
+            gene_y = str(selected_genes[1].text())
+            sns.lmplot(x=gene_x, y=gene_y, data=df_transformed, hue='Tissue',palette='Set1', size=10)
+            plt.show()
+            #self.addmpl_2(fig2)
+        else:
+            print 'Select only 2 genes'
+       
     def GenerateHeatMap(self):
+        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
+        df_temp = df_transformed.copy()
+        target_col = df_temp[TARGET_GENE]
+        df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
+        df_temp.insert(0, TARGET_GENE, target_col)
+        df_temp = df_temp.sort_values(TARGET_GENE, ascending=False)
+        
         fig2 = Figure()
         ax1f2 = fig2.add_subplot(111)
-        sns.heatmap(df_targets_log2_z,yticklabels=False, xticklabels=True, ax=ax1f2)
+        sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f2)
         self.addmpl_2(fig2)
 
         
