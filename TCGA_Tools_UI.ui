@@ -67,7 +67,7 @@
    <widget class="QPushButton" name="calculate_correlation_button">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>440</x>
       <y>310</y>
       <width>161</width>
       <height>32</height>
@@ -172,7 +172,7 @@
    <widget class="QPushButton" name="generate_heatmap_button">
     <property name="geometry">
      <rect>
-      <x>620</x>
+      <x>610</x>
       <y>310</y>
       <width>161</width>
       <height>32</height>
@@ -265,23 +265,6 @@
      <enum>QAbstractItemView::ExtendedSelection</enum>
     </property>
    </widget>
-   <widget class="QWidget" name="mplwindow" native="true">
-    <property name="geometry">
-     <rect>
-      <x>440</x>
-      <y>10</y>
-      <width>341</width>
-      <height>291</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <layout class="QVBoxLayout" name="mplvl"/>
-   </widget>
    <widget class="QPushButton" name="plot_hist_button">
     <property name="geometry">
      <rect>
@@ -329,7 +312,7 @@
      <string>Cut-off:</string>
     </property>
    </widget>
-   <widget class="QWidget" name="mplwindow_2" native="true">
+   <widget class="QWidget" name="mplwindow" native="true">
     <property name="geometry">
      <rect>
       <x>790</x>
@@ -344,7 +327,23 @@
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
-    <layout class="QVBoxLayout" name="mplvl_2"/>
+    <layout class="QVBoxLayout" name="mplvl">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
+     <property name="leftMargin">
+      <number>1</number>
+     </property>
+     <property name="topMargin">
+      <number>1</number>
+     </property>
+     <property name="rightMargin">
+      <number>1</number>
+     </property>
+     <property name="bottomMargin">
+      <number>8</number>
+     </property>
+    </layout>
    </widget>
    <widget class="QPushButton" name="generate_scatterplot_button">
     <property name="geometry">
@@ -372,19 +371,6 @@
      <string>Transform!</string>
     </property>
    </widget>
-   <widget class="QListWidget" name="log_display_box">
-    <property name="geometry">
-     <rect>
-      <x>440</x>
-      <y>350</y>
-      <width>341</width>
-      <height>181</height>
-     </rect>
-    </property>
-    <property name="selectionMode">
-     <enum>QAbstractItemView::SingleSelection</enum>
-    </property>
-   </widget>
    <widget class="QPushButton" name="lmplot_button">
     <property name="geometry">
      <rect>
@@ -396,6 +382,56 @@
     </property>
     <property name="text">
      <string>lmPlot</string>
+    </property>
+   </widget>
+   <widget class="QPlainTextEdit" name="log_display_box">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>350</y>
+      <width>341</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+    <property name="centerOnScroll">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QPlainTextEdit" name="correlation_output_box">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>10</y>
+      <width>341</width>
+      <height>301</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+    <property name="centerOnScroll">
+     <bool>true</bool>
     </property>
    </widget>
    <zorder>label</zorder>
@@ -415,15 +451,15 @@
    <zorder>load_project_button</zorder>
    <zorder>metadata_display_box</zorder>
    <zorder>loaded_targets_list</zorder>
-   <zorder>mplwindow</zorder>
    <zorder>plot_hist_button</zorder>
    <zorder>z_cutoff</zorder>
    <zorder>label_3</zorder>
-   <zorder>mplwindow_2</zorder>
+   <zorder>mplwindow</zorder>
    <zorder>generate_scatterplot_button</zorder>
    <zorder>transform_data_button</zorder>
-   <zorder>log_display_box</zorder>
    <zorder>lmplot_button</zorder>
+   <zorder>log_display_box</zorder>
+   <zorder>correlation_output_box</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

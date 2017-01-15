@@ -51,7 +51,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         global data_dir
         data_dir = QtGui.QFileDialog.getExistingDirectory(None, "Select Directory", '/Users/TS_MBP', QtGui.QFileDialog.ShowDirsOnly)
         L = os.listdir(data_dir)
-        self.log_display_box.addItem("Looking for data pickles in %s" % data_dir)
+        self.log_display_box.appendPlainText("Looking for data pickles in %s" % data_dir)
         choices_dict = {}
         for item in L:
             choices_dict[item[:4]] =item
@@ -65,11 +65,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         PROJECT = str(self.project_choice_menu.currentText())
         r = str(data_dir)
         print r
-        self.log_display_box.addItem("Loading %s dataset..." % PROJECT)
+        self.log_display_box.appendPlainText("Loading %s dataset..." % PROJECT)
         PICKLE_PATH = os.path.join(r, choices_dict[PROJECT])
         print choices_dict[PROJECT]
         df = pd.read_pickle(PICKLE_PATH)
-        self.log_display_box.addItem("Loaded %s!" % PROJECT)
+        self.log_display_box.appendPlainText("Loaded %s!" % PROJECT)
         self.metadata_display_box.addItem("%s metadata:" % PROJECT)
  	# Convert TCGA classifier codes
 	# 11 - Normal tissue -> -2
@@ -91,7 +91,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         #targets_dict = {}
         f = open(TARGETS_INFILE, 'r')
         print 'Reading gene targets from: %s' % TARGETS_INFILE
-        self.log_display_box.addItem("Reading genes targets from: %s" % TARGETS_INFILE)
+        self.log_display_box.appendPlainText("Reading genes targets from: %s" % TARGETS_INFILE)
         for line in f:
             words = line.split()
             key =' '.join(words[:-1])
@@ -103,7 +103,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     
     def ExtractTargets(self):
         global df_targets, df
-        self.log_display_box.addItem("Extracting genes from main dataframe")
+        self.log_display_box.appendPlainText("Extracting genes from main dataframe")
         targets_dict = {}
         targets = str(self.gene_targets_editable_list.toPlainText())
         lines = targets.split('\n')
@@ -118,11 +118,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         for key in targets_dict:
             if key in df.columns:
                 #df_targets.insert(0, key, df[targets_dict[key]])
-                self.log_display_box.addItem("Found %s (%s) in Dataset" % (key, targets_dict[key]))
+                self.log_display_box.appendPlainText("Found %s (%s) in Dataset" % (key, targets_dict[key]))
             else:
                 missing_keys.append(key)
                 print '%s (%s) not found in Dataset' % (key, targets_dict[key])
-                self.log_display_box.addItem("%s (%s) not found in Dataset" % (key, targets_dict[key]))
+                self.log_display_box.appendPlainText("%s (%s) not found in Dataset" % (key, targets_dict[key]))
         # Remove missing keys from targets_dict
         for key in missing_keys:
             targets_dict.pop(key)
@@ -184,18 +184,18 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.mplvl.addWidget(self.canvas)
         self.canvas.draw()
         canvasFull = True
+        self.toolbar = NavigationToolbar(self.canvas,
+                                         self.mplwindow, coordinates=True)
+        self.mplvl.addWidget(self.toolbar)
         
     def rmmpl(self):
         global canvasFull
         if canvasFull == True:
             self.mplvl.removeWidget(self.canvas)
+            self.mplvl.removeWidget(self.toolbar)
             self.canvas.close()
+            self.toolbar.close()
             canvasFull = False
-        
-    def addmpl_2(self, fig):
-        self.canvas = FigureCanvas(fig)
-        self.mplvl_2.addWidget(self.canvas)
-        self.canvas.draw()
 
     def TransformData(self):
         global df_targets, df_transformed
@@ -229,7 +229,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         #df_targets.drop(labels=[TARGET_GENE], axis=1, inplace=True)
         #df_targets.insert(0, TARGET_GENE, target_col)
         #df_targets = df_targets.sort_values(TARGET_GENE, ascending=False)
-        self.log_display_box.addItem("Finished transforming data")
+        self.log_display_box.appendPlainText("Finished transforming data")
         print 'Done processing'
 
 
@@ -249,7 +249,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             gene_y = str(selected_genes[1].text())
             sns.jointplot(x=gene_x, y=gene_y, data=df_transformed, kind='reg', size=10, space=0)
             plt.show()
-            #self.addmpl_2(fig2)
         else:
             print 'Select only 2 genes'
 
@@ -260,7 +259,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             gene_y = str(selected_genes[1].text())
             sns.lmplot(x=gene_x, y=gene_y, data=df_transformed, hue='Tissue',palette='Set1', size=10)
             plt.show()
-            #self.addmpl_2(fig2)
         else:
             print 'Select only 2 genes'
        
@@ -272,10 +270,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         df_temp.insert(0, TARGET_GENE, target_col)
         df_temp = df_temp.sort_values(TARGET_GENE, ascending=False)
         
-        fig2 = Figure()
-        ax1f2 = fig2.add_subplot(111)
-        sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f2)
-        self.addmpl_2(fig2)
+        fig1 = Figure()
+        ax1f1 = fig1.add_subplot(111)
+        sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)
+        fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.04)
+        self.addmpl(fig1)
 
         
         
