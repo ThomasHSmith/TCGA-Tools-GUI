@@ -17,15 +17,13 @@ qtCreatorFile = "./TCGA_Tools_UI.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
  
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
-    #global choices_dict
-    #global data_dir
-    #global df, df_targets, df_targets_log2, df_targets_z, df_targets_log2_z
-    global canvasFull, log2opt, ZScoreOpt, ZCutOffOpt
+    global canvasFull, log2opt, ZScoreOpt, ZCutOffOpt, includeControls
     # Default values for checkbox bools
     ZScoreOpt = False
     log2opt = True
     canvasFull = False
     ZCutOffOpt = False
+    includeControls = False
     
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -43,6 +41,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.transform_data_button.clicked.connect(self.TransformData)
         self.generate_scatterplot_button.clicked.connect(self.GenerateScatterPlot)
         self.lmplot_button.clicked.connect(self.GeneratelmPlot)
+        self.calculate_correlation_button.clicked.connect(self.CalculateCorrelation)
+        self.include_controls_checkbox.stateChanged.connect(self.ToggleIncludeControls)
+
 
 
         
@@ -88,7 +89,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         
     def LoadTargetsListFile(self):
         TARGETS_INFILE = str(QtGui.QFileDialog.getOpenFileName(self, 'OpenFile'))
-        #targets_dict = {}
         f = open(TARGETS_INFILE, 'r')
         print 'Reading gene targets from: %s' % TARGETS_INFILE
         self.log_display_box.appendPlainText("Reading genes targets from: %s" % TARGETS_INFILE)
@@ -98,7 +98,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             gene_symbol=words[0]
             ID = words[-1]
             self.gene_targets_editable_list.appendPlainText(gene_symbol + ' ' + ID)
-            #targets_dict[key] = ID
         f.close()
     
     def ExtractTargets(self):
@@ -136,21 +135,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.loaded_targets_list.clear()
         for column in df_targets:
             self.loaded_targets_list.addItem(column)
-	
-        #for key in targets_dict:
-            #try:
-                #df_targets.insert(0, key, df[targets_dict[key]])
-                #self.log_display_box.addItem("Found %s (%s) in Dataset" % (targets_dict[key], key))
-            #except KeyError:
-                #print '%s (%s) not found in Dataset' % (targets_dict[key], key)
-                #self.log_display_box.addItem("%s (%s) not found in Dataset" % (targets_dict[key], key))
-                
-
-        #df_targets.insert( len(df_targets.columns), 'PtID', df['PtID'])
-        #df_targets.insert( len(df_targets.columns), 'TumorStage', df['TumorStage'])
-        #vals_dict = {'11':'NormalControl', '01':'SolidTumor', '02':'RecurrentSolidTumor', '06':'Metastatic'}
-        #df_targets.insert( len(df_targets.columns), 'SampleType', df['SampleType'])
-
 
     def ToggleLog2(self):
         global log2opt
@@ -221,18 +205,43 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         df_transformed['SampleType'] = df_transformed['SampleType'].apply(lambda x: SampleToInt[x])
         ControlTumorConv = {-3:'Control', 0:'Tumor'}
         df_transformed['Tissue'] = df_transformed['SampleType'].apply(lambda x: ControlTumorConv[x])
-        #target_col = df_transformed[TARGET_GENE]
-        #df_transformed = df_transformed.drop(labels=[TARGET_GENE], axis=1)
-        #df_transformed.insert(0, TARGET_GENE, target_col)
-        #df_transformed = df_transformed.sort_values(TARGET_GENE, ascending=False)
-        #target_col = df_targets[TARGET_GENE]
-        #df_targets.drop(labels=[TARGET_GENE], axis=1, inplace=True)
-        #df_targets.insert(0, TARGET_GENE, target_col)
-        #df_targets = df_targets.sort_values(TARGET_GENE, ascending=False)
         self.log_display_box.appendPlainText("Finished transforming data")
-        print 'Done processing'
 
 
+    def ToggleIncludeControls(self):
+        global includeControls
+        if self.include_controls_checkbox.isChecked():
+            includeControls = True
+        else:
+            includeControls = False
+
+            
+    def CalculateCorrelation(self):
+        self.log_display_box.appendPlainText("Calculating correlation coefficients...")
+        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
+        df_temp = df_transformed.copy()
+        if includeControls == False:
+            df_temp = df_temp[df_temp['Tissue'] != 'Control']
+            self.log_display_box.appendPlainText("Dropped Control samples")
+        df_temp = df_temp.select_dtypes(exclude=['object'])
+
+        target_col = df_temp[TARGET_GENE]
+        df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
+        df_temp.insert(0, TARGET_GENE, target_col)
+        self.correlation_output_box.clear()
+        x=list(df_temp[TARGET_GENE])
+        header='Gene\t PearsonR (p)\t\t SpearmanR (p)'
+        self.correlation_output_box.appendPlainText(header)
+
+        for column in df_temp:
+            y = list(df_temp[column])
+            pearsonR, pearsonP = stats.pearsonr(x, y)
+            spearmanR, spearmanP = stats.spearmanr(x, y)
+            line = '%s\t%.3f (%.3E)\t%.3f (%.3E)' % (column, pearsonR, pearsonP, spearmanR, spearmanP)
+            self.correlation_output_box.appendPlainText(line)
+
+        self.log_display_box.appendPlainText("Completed correlation calculations.")       
+        
 
     def PlotHist(self):
         TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
