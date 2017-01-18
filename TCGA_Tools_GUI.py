@@ -18,14 +18,18 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
  
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     global canvasFull, log2opt, ZScoreOpt, ZCutOffOpt, includeControls
+    global data_dir, choices_dict
     # Default values for checkbox bools
     ZScoreOpt = False
+    data_dir = '/Users/TS_MBP/TCGA_Pickles'
     log2opt = True
     canvasFull = False
     ZCutOffOpt = False
     includeControls = False
+
     
     def __init__(self):
+        global choices_dict
         QtGui.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
@@ -44,6 +48,17 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.calculate_correlation_button.clicked.connect(self.CalculateCorrelation)
         self.include_controls_checkbox.stateChanged.connect(self.ToggleIncludeControls)
 
+        L = os.listdir(data_dir)
+        if len(L) > 0:
+    	    self.log_display_box.appendPlainText("Looking for data pickles in default directory: %s" % data_dir)
+    	    choices_dict = {}
+    	    for item in L:
+        	    choices_dict[item[:4]] =item
+        	    print item
+       	    for item in choices_dict.keys():
+                self.project_choice_menu.addItem(item)
+        else:
+            self.log_display_box.appendPlainText("No data pickles found in default directory. Please specifcy directory")
 
 
         
@@ -72,19 +87,23 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         df = pd.read_pickle(PICKLE_PATH)
         self.log_display_box.appendPlainText("Loaded %s!" % PROJECT)
         self.metadata_display_box.addItem("%s metadata:" % PROJECT)
- 	# Convert TCGA classifier codes
-	# 11 - Normal tissue -> -2
-	# 01 - Solid tumor -> 0
-	# 02 - Recurrent solid tumor -> 1
-	# 06 - Mets -> 2
-        vals_dict = {'11':'NormalControl', '01':'SolidTumor', '02':'RecurrentSolidTumor', '06':'Metastatic'}
-        types_list = list(df.SampleType.apply(lambda x: vals_dict[x]))
+        types_list = list(df.SampleType)
         types_set = set(types_list)
+        stages_list = list(df.TumorStage)
+        stages_set = set(stages_list)
         for sample_type in types_set:
             msg='%s: %d' % (sample_type, types_list.count(sample_type))
             self.metadata_display_box.addItem(msg)
         msg='Total: %d\n' % len(types_list)
         self.metadata_display_box.addItem(msg)
+
+        for stage in stages_set:
+            msg='%s: %d' % (stage, stages_list.count(stage))
+            self.metadata_display_box.addItem(msg)
+        msg='Total: %d\n' % len(stages_list)
+        self.metadata_display_box.addItem(msg)
+
+
 
         
     def LoadTargetsListFile(self):
@@ -201,12 +220,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         #vals_dict = {'11':'NormalControl', '01':'SolidTumor', '02':'RecurrentSolidTumor', '06':'Metastatic'}
         #df_targets.insert(len(df_targets.columns),'SampleType',meta_col)
         df_transformed = df_transformed.drop(labels=['PtID','TumorStage'], axis=1)
-        SampleToInt = {'11':-3, '01':0, '06':0, '02':0}
+        SampleToInt = {'Solid Tissue Normal':-3, 'Primary Tumor':0, 'Metastatic':0, 'Recurrent Solid Tumor':0}
         df_transformed['SampleType'] = df_transformed['SampleType'].apply(lambda x: SampleToInt[x])
         ControlTumorConv = {-3:'Control', 0:'Tumor'}
         df_transformed['Tissue'] = df_transformed['SampleType'].apply(lambda x: ControlTumorConv[x])
         self.log_display_box.appendPlainText("Finished transforming data")
-
 
     def ToggleIncludeControls(self):
         global includeControls
@@ -278,12 +296,15 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
         df_temp.insert(0, TARGET_GENE, target_col)
         df_temp = df_temp.sort_values(TARGET_GENE, ascending=False)
-        
-        fig1 = Figure()
-        ax1f1 = fig1.add_subplot(111)
-        sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)
-        fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.04)
-        self.addmpl(fig1)
+
+        sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True)
+        plt.show()        
+        # For embedded:
+        #fig1 = Figure()
+        #ax1f1 = fig1.add_subplot(111)
+        #sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)
+        #fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.04)
+        #self.addmpl(fig1)
 
         
         
