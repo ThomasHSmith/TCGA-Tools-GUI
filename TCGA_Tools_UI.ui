@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1546</width>
-    <height>596</height>
+    <width>1280</width>
+    <height>651</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -367,9 +367,9 @@
     <property name="geometry">
      <rect>
       <x>430</x>
-      <y>360</y>
+      <y>390</y>
       <width>341</width>
-      <height>191</height>
+      <height>190</height>
      </rect>
     </property>
     <property name="font">
@@ -419,17 +419,69 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QCheckBox" name="include_controls_checkbox">
+   <widget class="QPushButton" name="save_heatmap_button">
     <property name="geometry">
      <rect>
-      <x>460</x>
-      <y>340</y>
-      <width>121</width>
-      <height>18</height>
+      <x>630</x>
+      <y>330</y>
+      <width>110</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>Include controls?</string>
+     <string>Save Heatmap</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="export_to_excel_button">
+    <property name="geometry">
+     <rect>
+      <x>620</x>
+      <y>360</y>
+      <width>121</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Export to Excel</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sample_type_menu">
+    <property name="geometry">
+     <rect>
+      <x>440</x>
+      <y>360</y>
+      <width>161</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial Black</family>
+      <pointsize>14</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>340</y>
+      <width>191</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial Black</family>
+      <pointsize>14</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Choose Samples Types:</string>
     </property>
    </widget>
    <zorder>label</zorder>
@@ -457,14 +509,17 @@
    <zorder>lmplot_button</zorder>
    <zorder>log_display_box</zorder>
    <zorder>correlation_output_box</zorder>
-   <zorder>include_controls_checkbox</zorder>
+   <zorder>save_heatmap_button</zorder>
+   <zorder>export_to_excel_button</zorder>
+   <zorder>sample_type_menu</zorder>
+   <zorder>label_3</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1546</width>
+     <width>1280</width>
      <height>22</height>
     </rect>
    </property>
