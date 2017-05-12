@@ -80,7 +80,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def LoadProjectData(self):
         global df, df_ctrls, df_tumors
         global all_samples_label, ctrl_samples_label, tumor_samples_label
+        self.correlation_output_box.clear()
         self.metadata_display_box.clear()
+        self.sample_type_menu.clear()
         PROJECT = str(self.project_choice_menu.currentText())
         r = str(data_dir)
         print r
@@ -122,6 +124,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         TARGETS_INFILE = str(QtGui.QFileDialog.getOpenFileName(self, 'OpenFile'))
         f = open(TARGETS_INFILE, 'r')
         print 'Reading gene targets from: %s' % TARGETS_INFILE
+        self.gene_targets_editable_list.clear()
         self.log_display_box.appendPlainText("Reading genes targets from: %s" % TARGETS_INFILE)
         for line in f:
             words = line.split()
@@ -133,6 +136,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
     def ExtractTargets(self):
         global df_targets, df, df_targets_controls, df_targets_tumors
+        self.correlation_output_box.clear()
         self.log_display_box.appendPlainText("Extracting genes from main dataframe")
         targets_dict = {}
         IDs_ordered = []
