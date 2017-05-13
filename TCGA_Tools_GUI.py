@@ -50,6 +50,12 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.calculate_correlation_button.clicked.connect(self.CalculateCorrelation)
         self.export_to_excel_button.clicked.connect(self.ExportToExcel)
         self.save_heatmap_button.clicked.connect(self.SaveHeatMap)
+        self.dataDirMenuButton.connect(self.SpecifyRootDataDir)
+        self.saveToExcelMenuButton.connect(self.ExportToExcel)
+        self.exitMenuButton.triggered.connect(self.close)
+
+
+
 
         L = os.listdir(data_dir)
         if len(L) > 0:
@@ -83,6 +89,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.correlation_output_box.clear()
         self.metadata_display_box.clear()
         self.sample_type_menu.clear()
+        self.stage_selection_box.clear()
         PROJECT = str(self.project_choice_menu.currentText())
         r = str(data_dir)
         print r
@@ -93,21 +100,35 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
         self.log_display_box.appendPlainText("Loaded %s!" % PROJECT)
         self.metadata_display_box.addItem("%s metadata:" % PROJECT)
-        types_list = list(df.SampleType)
-        types_set = set(types_list)
-        stages_list = list(df.TumorStage)
-        stages_set = set(stages_list)
-        for sample_type in types_set:
-            msg='%s: %d' % (sample_type, types_list.count(sample_type))
+
+        sample_types_dict = dict(df.SampleType.value_counts())
+        df['TumorStage'] = df.TumorStage.apply(lambda x: 'na' if ( (x=='not reported')| (x=='stage x') ) else x)
+        tumor_stages_dict = dict(df.TumorStage.value_counts())
+        for key in sample_types_dict:
+            msg='%s: %d' % (key, sample_types_dict[key])
             self.metadata_display_box.addItem(msg)
-        msg='Total: %d\n' % len(types_list)
+        msg='Total: %d\n' % len(df)
         self.metadata_display_box.addItem(msg)
 
-        for stage in stages_set:
-            msg='%s: %d' % (stage, stages_list.count(stage))
+        for key in tumor_stages_dict:
+            msg='%s: %d' % (key, tumor_stages_dict[key])
             self.metadata_display_box.addItem(msg)
-        msg='Total: %d\n' % len(stages_list)
+        msg='Total: %d\n' % len(df)
         self.metadata_display_box.addItem(msg)
+
+        na_val, stage1_val, stage2_val, stage3_val, stage4_val = range(0,5)
+        stages_dict = { 'stage i': stage1_val, 'stage ia':stage1_val, 'stage ib':stage1_val,
+                        'stage iia':stage2_val, 'stage iib': stage2_val, 'stage ii': stage2_val,
+                        'stage iiia': stage3_val, 'stage iiic':stage3_val, 'stage iiib':stage3_val,
+                        'stage iii':stage3_val, 'stage iv':stage4_val, 'na':'na'}
+        df['TumorStageStr'] = df['TumorStage'].apply(lambda x: str(stages_dict[x]))
+        stages_dict = dict(df.TumorStageStr.value_counts())
+        stages_str_dict = dict(df.TumorStageStr.value_counts())
+
+        for key in stages_str_dict:
+            msg='Stage %s: %s' % (key, stages_str_dict[key])
+            self.stage_selection_box.addItem(msg)
+
 
         df_ctrls = df[df.SampleType == 'Solid Tissue Normal'].copy()
         df_tumors = df[df.SampleType != 'Solid Tissue Normal'].copy()
@@ -124,6 +145,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         TARGETS_INFILE = str(QtGui.QFileDialog.getOpenFileName(self, 'OpenFile'))
         f = open(TARGETS_INFILE, 'r')
         print 'Reading gene targets from: %s' % TARGETS_INFILE
+        self.correlation_output_box.clear()
         self.gene_targets_editable_list.clear()
         self.log_display_box.appendPlainText("Reading genes targets from: %s" % TARGETS_INFILE)
         for line in f:
@@ -148,19 +170,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             ensID = words[-1]
             targets_dict[ensID] = gene_name
             IDs_ordered.append(ensID)
-       # for ensID in IDs_ordered:
-       #        df_targets.insert(0, key, df[targets_dict[key]])
-       #        self.log_display_box.appendPlainText("Found %s (%s) in Dataset" % (key, targets_dict[key]))
-       #     else:
-                #missing_keys.append(key)
-       #         targets_ordered.remove(key)
-       #         print '%s (%s) not found in Dataset' % (key, targets_dict[key])
-       #         self.log_display_box.appendPlainText("%s (%s) not found in Dataset" % (key, targets_dict[key]))
-        # Remove missing keys from targets_dict
-        #for key in missing_keys:
-            #targets_dict.pop(key)
 
-        METADATA_COLS = ['PtID','TumorStage','SampleType']
+        METADATA_COLS = ['PtID','TumorStage','TumorStageStr','SampleType']
         df_targets = df[IDs_ordered+METADATA_COLS].copy()
         df_targets.rename(columns=targets_dict, inplace=True)
 
@@ -169,15 +180,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
         df_targets_tumors = df_tumors[IDs_ordered+METADATA_COLS].copy()
         df_targets_tumors.rename(columns=targets_dict, inplace=True)
-
-        stage1_val = -3
-        stage2_val = -1.5
-        stage3_val = 1.5
-        stage4_val = 3
-        stages_dict = { 'stage i': stage1_val, 'stage ia':stage1_val, 'stage ib':stage1_val,
-                        'stage iia':stage2_val, 'stage iib': stage2_val, 'stage ii': stage2_val,
-                        'stage iiia': stage3_val, 'stage iiic':stage3_val, 'stage iiib':stage3_val, 'stage iii':stage3_val,
-                        'stage iv':stage4_val, 'stage x': np.nan,'not reported': np.nan, 'na':np.nan}
 
         self.loaded_targets_list.clear()
         for column in df_targets:
@@ -282,34 +284,64 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.log_display_box.appendPlainText("Finished transforming data")
 
     def get_sample_choice_df(self):
+        stage_choices = [(str(x.text()).split(':')[0].split(' ')[1]) for x in self.stage_selection_box.selectedItems()]
+        print stage_choices
+        if len(stage_choices) == 0:
+            stage_choices = ['na', '1', '2', '3', '4']
+
         sample_choice = str(self.sample_type_menu.currentText())
         if ((sample_choice == '') | (sample_choice == all_samples_label)):
             if dataTransformed:
-                return (df_transformed.copy(), 'all samples (transformed')
+                return ( df_transformed[df_transformed.TumorStageStr.isin(stage_choices)].copy(), 'all samples (transformed')
             else:
-                return (df_targets.copy(), 'all samples (untransformed)')
+                return (df_targets[df_targets.TumorStageStr.isin(stage_choices)].copy(), 'all samples (untransformed)')
         elif sample_choice == ctrl_samples_label:
             if dataTransformed:
-                return (df_controls_trans.copy(), 'control samples only (transformed)')
+                return (df_controls_trans[df_controls_trans.TumorStageStr.isin(stage_choices)].copy(), 'control samples only (transformed)')
             else:
-                return (df_targets_controls.copy(), 'control samples only (untransformed)')
+                return (df_targets_controls[df_targets_controls.TumorStageStr.isin(stage_choices)].copy(), 'control samples only (untransformed)')
         elif sample_choice == tumor_samples_label:
             if dataTransformed:
-                return (df_tumors_trans.copy(), 'tumor samples only (transformed)')
+                return (df_tumors_trans[df_tumors_trans.TumorStageStr.isin(stage_choices)].copy(), 'tumor samples only (transformed)')
             else:
-                return (df_targets_tumors.copy(), 'tumor samples only (untransformed)')
+                return (df_targets_tumors[df_targets_tumors.TumorStageStr.isin(stage_choices)].copy(), 'tumor samples only (untransformed)')
+
 
 
     def CalculateCorrelation(self):
         TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
         df_temp, samp_choice = get_sample_choice_df(self)
+        self.correlation_output_box.clear()
+
+        data_summary_header = 'Sample Types Included\tNumber of Samples'
+        self.correlation_output_box.appendPlainText(data_summary_header)
+        sample_types_dict = dict(df_temp.SampleType.value_counts())
+        cum_sum = 0
+        for key in sample_types_dict:
+            msg='\t%s\t\t%d' % (key, sample_types_dict[key])
+            cum_sum = cum_sum + int(sample_types_dict[key])
+            self.correlation_output_box.appendPlainText(msg)
+        msg='Total:\t\t%d\n' % cum_sum
+        self.correlation_output_box.appendPlainText(msg)
+
+        data_summary_header = 'Tumor Stages Included\tNumber of Samples'
+        self.correlation_output_box.appendPlainText(data_summary_header)
+        tumor_stages_dict = dict(df_temp.TumorStageStr.value_counts())
+        cum_sum = 0
+        for key in tumor_stages_dict:
+            msg='\tStage %s\t\t%d' % (key, tumor_stages_dict[key])
+            cum_sum = cum_sum + int(tumor_stages_dict[key])
+            self.correlation_output_box.appendPlainText(msg)
+        msg='Total:\t\t%d\n' % cum_sum
+        self.correlation_output_box.appendPlainText(msg)
+        msg = '-'*30+'\n'
+        self.correlation_output_box.appendPlainText(msg)
 
         TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
         df_temp = df_temp.select_dtypes(exclude=['object'])
         target_col = df_temp[TARGET_GENE]
         df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
         df_temp.insert(0, TARGET_GENE, target_col)
-        self.correlation_output_box.clear()
         x=list(df_temp[TARGET_GENE])
         header='Gene\t PearsonR (p)\t\t SpearmanR (p)'
         self.correlation_output_box.appendPlainText(header)

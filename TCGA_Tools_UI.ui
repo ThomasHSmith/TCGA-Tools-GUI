@@ -130,7 +130,7 @@
       <x>10</x>
       <y>280</y>
       <width>211</width>
-      <height>231</height>
+      <height>211</height>
      </rect>
     </property>
     <property name="font">
@@ -212,7 +212,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>510</y>
+      <y>490</y>
       <width>110</width>
       <height>32</height>
      </rect>
@@ -256,7 +256,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>10</y>
+      <y>0</y>
       <width>171</width>
       <height>301</height>
      </rect>
@@ -366,10 +366,10 @@
    <widget class="QPlainTextEdit" name="log_display_box">
     <property name="geometry">
      <rect>
-      <x>430</x>
-      <y>390</y>
-      <width>341</width>
-      <height>190</height>
+      <x>10</x>
+      <y>519</y>
+      <width>771</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="font">
@@ -394,9 +394,9 @@
    <widget class="QPlainTextEdit" name="correlation_output_box">
     <property name="geometry">
      <rect>
-      <x>430</x>
-      <y>10</y>
-      <width>341</width>
+      <x>410</x>
+      <y>0</y>
+      <width>371</width>
       <height>301</height>
      </rect>
     </property>
@@ -484,6 +484,24 @@
      <string>Choose Samples Types:</string>
     </property>
    </widget>
+   <widget class="QListWidget" name="stage_selection_box">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>390</y>
+      <width>371</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
+    </property>
+    <property name="selectionMode">
+     <enum>QAbstractItemView::ExtendedSelection</enum>
+    </property>
+   </widget>
    <zorder>label</zorder>
    <zorder>horizontalLayoutWidget</zorder>
    <zorder>project_choice_menu</zorder>
@@ -513,6 +531,7 @@
    <zorder>export_to_excel_button</zorder>
    <zorder>sample_type_menu</zorder>
    <zorder>label_3</zorder>
+   <zorder>stage_selection_box</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -527,6 +546,9 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="dataDirMenuButton"/>
+    <addaction name="saveToExcelMenuButton"/>
+    <addaction name="exitMenuButton"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -539,6 +561,30 @@
   <action name="actionOpen">
    <property name="text">
     <string>Open</string>
+   </property>
+  </action>
+  <action name="dataDirMenuButton">
+   <property name="text">
+    <string>Choose Data Directory</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="exitMenuButton">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+Shift+Q</string>
+   </property>
+  </action>
+  <action name="saveToExcelMenuButton">
+   <property name="text">
+    <string>Save to Excel...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>
