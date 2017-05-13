@@ -35,6 +35,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         QtGui.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
+
         self.find_directory_button.clicked.connect(self.SpecifyRootDataDir)
         self.load_project_button.clicked.connect(self.LoadProjectData)
         self.load_targets_list_button.clicked.connect(self.LoadTargetsListFile)
@@ -46,13 +47,24 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.generate_heatmap_button.clicked.connect(self.GenerateHeatMap)
         self.transform_data_button.clicked.connect(self.TransformData)
         self.generate_scatterplot_button.clicked.connect(self.GenerateScatterPlot)
-        self.lmplot_button.clicked.connect(self.GeneratelmPlot)
+#        self.lmplot_button.clicked.connect(self.GeneratelmPlot)
         self.calculate_correlation_button.clicked.connect(self.CalculateCorrelation)
         self.export_to_excel_button.clicked.connect(self.ExportToExcel)
         self.save_heatmap_button.clicked.connect(self.SaveHeatMap)
-        self.dataDirMenuButton.connect(self.SpecifyRootDataDir)
-        self.saveToExcelMenuButton.connect(self.ExportToExcel)
-        self.exitMenuButton.triggered.connect(self.close)
+        self.quitButton.clicked.connect(self.quitApp)
+
+
+#        bar = self.menuBar()
+#        fileMenu = bar.addMenu("File")
+#        fileMenu.addAction("New")
+#        saveMenuButton.setShortcut("Ctrl+S")
+#        fileMenu.addAction(saveMenuButton)
+
+#        fileMenu.addAction(quit)
+#        fileMenu.triggered.connect(self.quitApp)
+#        self.dataDirMenuButton.connect(self.SpecifyRootDataDir)
+#        self.saveToExcelMenuButton.connect(self.ExportToExcel)
+#        self.exitMenuButton.triggered.connect(self.close)
 
 
 
@@ -69,6 +81,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         else:
             self.log_display_box.appendPlainText("No data pickles found in default directory. Please specifcy directory")
 
+    def quitApp(self):
+        sys.exit()
 
     def SpecifyRootDataDir(self):
         global choices_dict
@@ -312,29 +326,32 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
         df_temp, samp_choice = get_sample_choice_df(self)
         self.correlation_output_box.clear()
+        data_summary_header = '\t--------------- Metadata for Analyzed Samples ---------------'
+        self.correlation_output_box.appendPlainText(data_summary_header)
 
-        data_summary_header = 'Sample Types Included\tNumber of Samples'
+        data_summary_header = 'Tissue Type:\t\tNumber of Samples:'
         self.correlation_output_box.appendPlainText(data_summary_header)
         sample_types_dict = dict(df_temp.SampleType.value_counts())
         cum_sum = 0
         for key in sample_types_dict:
-            msg='\t%s\t\t%d' % (key, sample_types_dict[key])
+            if len(key.split(' ')) > 2:
+                msg='  -%s\t%d' % (key, sample_types_dict[key])
+            else:
+                msg='  -%s\t\t%d\n' % (key, sample_types_dict[key])
             cum_sum = cum_sum + int(sample_types_dict[key])
             self.correlation_output_box.appendPlainText(msg)
-        msg='Total:\t\t%d\n' % cum_sum
-        self.correlation_output_box.appendPlainText(msg)
 
-        data_summary_header = 'Tumor Stages Included\tNumber of Samples'
+        data_summary_header = 'Tumor Stage:\t\tNumber of Samples'
         self.correlation_output_box.appendPlainText(data_summary_header)
         tumor_stages_dict = dict(df_temp.TumorStageStr.value_counts())
         cum_sum = 0
         for key in tumor_stages_dict:
-            msg='\tStage %s\t\t%d' % (key, tumor_stages_dict[key])
+            msg='  -Stage %s\t\t%d' % (key, tumor_stages_dict[key])
             cum_sum = cum_sum + int(tumor_stages_dict[key])
             self.correlation_output_box.appendPlainText(msg)
-        msg='Total:\t\t%d\n' % cum_sum
+        msg='\tTotal:\t%d' % cum_sum
         self.correlation_output_box.appendPlainText(msg)
-        msg = '-'*30+'\n'
+        msg = '-'*100
         self.correlation_output_box.appendPlainText(msg)
 
         TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
