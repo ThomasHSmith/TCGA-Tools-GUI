@@ -1,8 +1,8 @@
 import sys, os
 from PyQt4 import QtCore, QtGui, uic
+from PyQt4.QtGui import *
 import pandas as pd
 from PyQt4.uic import loadUiType
- 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import (
     FigureCanvasQTAgg as FigureCanvas,
@@ -11,11 +11,16 @@ import numpy as np
 from scipy import stats
 import seaborn as sns
 import matplotlib.pyplot as plt
+import re
+import urllib2
+from urllib2 import HTTPError, URLError
+import xml.dom.minidom
+from urllib2 import HTTPError
+from operator import itemgetter
 
 qtCreatorFile = "./TCGA_Tools_UI.ui"
- 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
- 
+
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     global canvasFull, log2Opt, ZScoreOpt, ZCutOffOpt, controlsOnly, tumorsOnly
     global data_dir, choices_dict, dataTransformed, get_sample_choice_df
@@ -34,6 +39,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         global choices_dict
         QtGui.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
+        w = QWidget()
         self.setupUi(self)
 
         self.find_directory_button.clicked.connect(self.SpecifyRootDataDir)
@@ -49,22 +55,18 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.generate_scatterplot_button.clicked.connect(self.GenerateScatterPlot)
         self.calculate_correlation_button.clicked.connect(self.CalculateCorrelation)
         self.export_to_excel_button.clicked.connect(self.ExportToExcel)
-        self.save_heatmap_button.clicked.connect(self.SaveHeatMap)
         self.quitButton.clicked.connect(self.quitApp)
+        self.gene_search_button.clicked.connect(self.SearchForGeneIDs)
+        self.add_to_list_button.clicked.connect(self.AddResultToGeneList)
+        self.clear_results_button.clicked.connect(self.ClearSearchResults)
+open_ensembl_page
+open_uniprot_page
+select_all_button
+
+def OpenUniprotInBrowser(self, uniprotID):
 
 
-#        bar = self.menuBar()
-#        fileMenu = bar.addMenu("File")
-#        fileMenu.addAction("New")
-#        saveMenuButton.setShortcut("Ctrl+S")
-#        fileMenu.addAction(saveMenuButton)
-
-#        fileMenu.addAction(quit)
-#        fileMenu.triggered.connect(self.quitApp)
-#        self.dataDirMenuButton.connect(self.SpecifyRootDataDir)
-#        self.saveToExcelMenuButton.connect(self.ExportToExcel)
-#        self.exitMenuButton.triggered.connect(self.close)
-
+def OpenEnsemblInBrowser(self, ensID)
 
 
 
@@ -211,6 +213,91 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         for column in df_targets:
             self.loaded_targets_list.addItem(column)
 
+
+#gene_search_input
+#search_results_list
+    def SearchForGeneIDs(self):
+        self.search_results_list.clear()
+        search_targets = str(self.gene_search_input.toPlainText())
+        items = search_targets.split(',')
+        targets = [x.strip().rstrip() for x in items]
+        for target in targets:
+            print target
+            res_dict = self.get_ensIDs(target)
+            if len(res_dict) > 0:
+                for key in res_dict:
+                    msg = '%s %s' % (key, res_dict[key])
+                    self.search_results_list.addItem(msg)
+
+
+    def AddResultToGeneList(self):
+        for item in self.search_results_list.selectedItems():
+            result = str(item.text())
+        #results_to_add = [ str(x.text()) for x in self.search_results_list.selectedItems()]
+        #for result in results_to_add:
+            if len(result) > 1:
+                words = result.split()
+                name=' '.join(words[:-1])
+                ID=words[-1]
+                curr_targets = str(self.gene_targets_editable_list.toPlainText())
+                lines = curr_targets.split('\n')
+                IDs_ordered = []
+                if len(lines) > 1:
+                    for line in lines:
+                        curr_words = line.split()
+                        ensID = curr_words[-1]
+                        IDs_ordered.append(ensID)
+                    if len(IDs_ordered) > 0:
+                        if ID in IDs_ordered:
+                            self.search_results_list.takeItem(self.search_results_list.row(item))
+                        else:
+                            self.gene_targets_editable_list.appendPlainText(name + ' ' + ID)
+                            self.search_results_list.takeItem(self.search_results_list.row(item))
+                else:
+                    self.gene_targets_editable_list.appendPlainText(name + ' ' + ID)
+                    self.search_results_list.takeItem(self.search_results_list.row(item))
+            else:
+                print 'Invalid selection'
+
+    def ClearSearchResults(self):
+        self.search_results_list.clear()
+
+
+
+    def get_ensIDs(self, input_name):
+        try:
+            url = 'http://www.uniprot.org/uniprot/%s.xml' % input_name
+            fp = urllib2.urlopen(url)
+            fp.close()
+            IDs = []
+            IDs.append(input_name)
+        except HTTPError:
+            url = 'http://www.uniprot.org/uniprot/?query=gene:%s+AND+organism:9606&format=tab&columns=id' % input_name
+            data = urllib2.urlopen(url)
+            IDs = [x.rstrip() for x in data.readlines()[1:]]
+        ids_dict = {}
+        for uniprot_ID in IDs:
+            url = 'http://www.uniprot.org/uniprot/%s.xml' % uniprot_ID
+            fp = urllib2.urlopen(url)
+            doc = xml.dom.minidom.parse(fp)
+            fp.close()
+            ensIDs = []
+            dbrefs = doc.getElementsByTagName('dbReference')
+            names_tag = doc.getElementsByTagName('gene')[0]
+            gene_name = str(names_tag.getElementsByTagName('name')[0].childNodes[0].data)
+            for ref in dbrefs:
+                val = str(ref.getAttributeNode('id').value)
+                if len(re.findall('ENSG\d.{1,15}', val)) > 0:
+                    ensIDs.append(val)
+            ensIDs = set(ensIDs)
+            ensIDs = list(ensIDs)
+            if len(ensIDs) > 1:
+                print '%d unique ENSG IDs found for %s (%s)' % (len(ensIDs), gene_name, uniprot_ID)
+            if len(ensIDs) == 1:
+                ids_dict[gene_name] = ensIDs[0]
+        return ids_dict
+
+
     def Log2Transform(self):
         global log2Opt
         log2Opt = True
@@ -230,7 +317,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
     def addmpl(self, fig):
         global canvasFull
-        self.rmmpl()
+        if canvasFull:
+            self.rmmpl()
         self.canvas = FigureCanvas(fig)
         self.mplvl.addWidget(self.canvas)
         self.canvas.draw()
@@ -247,6 +335,17 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.canvas.close()
             self.toolbar.close()
             canvasFull = False
+
+    def show_msg_box(self, msg, details):
+        mbox = QMessageBox(w)
+        mbox.setIcon(QMessageBox.Warning)
+        mbox.setText(msg)
+        mbox.setDetailedText(details)
+#        mbox.setInformativeText(details)
+        mbox.setStandardButtons(QMessageBox.Ok)
+        mbox.exec_()
+
+
 
     def ResetData(self):
         global log2Opt, ZScoreOpt, ZCutOffOpt, dataTransformed
@@ -281,14 +380,14 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             log2Msg = 'Log2 transformed:\tNo'
 
         if ZScoreOpt:
-            ZScoreMsg = 'Z-score:\t\tYes'
+            ZScoreMsg = 'Z-score:\tYes'
             Z_CUTOFF = int(self.z_cutoff.text())
             if Z_CUTOFF != 0:
                 ZCutOffMsg = 'Z-score cut-off:\t%d' % Z_CUTOFF
             else:
                 ZCutOffMsg = 'Z-score cut-off:\tNo'
         else:
-            ZScoreMsg = 'Z-score:\t\tNo'
+            ZScoreMsg = 'Z-score:\tNo'
             ZCutOffMsg = 'Z-score cut-off:\tNo'
 
         self.data_status_box.clear()
@@ -405,7 +504,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         sample_types_dict = dict(df_temp.SampleType.value_counts())
         cum_sum = 0
         for key in sample_types_dict:
-            if len(key.split(' ')) > 2:
+            if len(key.split(' ')) >= 2:
                 msg='     -%s\t%d' % (key, sample_types_dict[key])
             else:
                 msg='     -%s\t\t%d' % (key, sample_types_dict[key])
@@ -454,18 +553,34 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         print TARGET_GENE
 
     def GenerateScatterPlot(self):
-        selected_genes = self.loaded_targets_list.selectedItems()
-        if len(selected_genes) == 2:
-            gene_x = str(selected_genes[0].text())
-            gene_y = str(selected_genes[1].text())
-            df_temp, samp_choice = get_sample_choice_df(self)
-            self.log_display_box.appendPlainText(("Generated scatter plot for %s and %s from %s" % (gene_x, gene_y, samp_choice)) )
-            sns.jointplot(x=gene_x, y=gene_y, data=df_temp, kind='reg', size=10, space=0)
-            plt.show()
-
+        if self.loaded_targets_list.count() == 0:
+            self.show_msg_box('Select two genes to plot', 'Two genes must be selected from the list of loaded genes in order to generate scatterplot')
         else:
-            print 'Select only 2 genes'
-            self.log_display_box.appendPlainText('Select only 2 genes')
+            selected_genes = self.loaded_targets_list.selectedItems()
+            if len(selected_genes) == 2:
+                gene_x = str(selected_genes[0].text())
+                gene_y = str(selected_genes[1].text())
+                df_temp, samp_choice = get_sample_choice_df(self)
+                if self.heatmap_windowed_checkbox.isChecked():
+                    sns.jointplot(x=gene_x, y=gene_y, data=df_temp, kind='reg', size=10, space=0)
+                    plt.show()
+                else:
+                    if self.save_figure_checkbox.isChecked():
+                        fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.svg'))
+                        file_format = fileName.split('.')[-1]
+                        fig1 = Figure()
+                        ax1f1 = fig1.add_subplot(111)
+                        ax1f1.scatter(x=gene_x, y=gene_y, data=df_temp)
+                        self.addmpl(fig1)
+                        fig1.savefig(fileName, format=file_format)
+
+                    else:
+                        fig1 = Figure()
+                        ax1f1 = fig1.add_subplot(111)
+                        ax1f1.scatter(x=gene_x, y=gene_y, data=df_temp)
+                        self.addmpl(fig1)
+            else:
+                self.show_msg_box('Select two genes to plot', 'At least two genes must be selected from the list of loaded genes in order to generate scatterplot')
 
     def GeneratelmPlot(self):
         selected_genes = self.loaded_targets_list.selectedItems()
@@ -483,7 +598,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
 
     def GenerateHeatMap(self):
-        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
+        if self.loaded_targets_list.count() == 0:
+            self.show_msg_box('Select a target gene!', 'Select a gene from the list of loaded genes to serve as your gene of interest.  Target gene will appear first on the heatmap and samples (rows) will be sorted by target gene values.')
+            return
+        else:
+            TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
         df_temp, samp_choice = get_sample_choice_df(self)
         target_col = df_temp[TARGET_GENE]
         df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
@@ -491,45 +610,29 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         df_temp = df_temp.sort_values(TARGET_GENE, ascending=False)
 
         if self.heatmap_windowed_checkbox.isChecked():
-           sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True)
-           plt.show()
+            fig2 = Figure()
+            ax1f2 = fig1.add_subplot(111)
+            for item in (sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f2)).get_xticklabels():
+                item.set_rotation(90)
+            fig2.show()
         else:
-            fig1 = Figure()
-            ax1f1 = fig1.add_subplot(111)
-            sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)
-            fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.04)
-            self.addmpl(fig1)
-
-    def SaveHeatMap(self):
-        fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.svg'))
-
-        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
-        df_temp, samp_choice = get_sample_choice_df(self)
-
-#        if dataTransformed:
-#            df_temp = df_transformed.copy()
-#        else:
-#            df_temp = df_targets.copy()
-        target_col = df_temp[TARGET_GENE]
-        df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
-        df_temp.insert(0, TARGET_GENE, target_col)
-        df_temp = df_temp.sort_values(TARGET_GENE, ascending=False)
-
-
-        #fig_height = int( (len(df_temp))/5)
-        #fig = plt.figure(figsize=(3,fig_height))
-        #fig = Figure(figsize=(3, fig_height), dpi=300)
-        #fig1 = Figure(figsize=(3,fig_height))
-        ax = sns.heatmap(df_temp.select_dtypes(exclude=['object']), yticklabels=False, xticklabels=True)
-        file_format = fileName.split('.')[-1]
-        fig = ax.get_figure()
-        fig.savefig(fileName, format=file_format, transparent=True, bbox_inchest='tight')
-        #hm.savefig(fileName, dpi=300, format=file_format, transparent=True, bbox_inches='tight')
-        self.log_display_box.appendPlainText("Saved heatmap as %s" % fileName)
-#        baseFileName = fileName.split('.')[0]
-#        excelFileName = '%s.xlsx' % baseFileName
-#        df_temp.to_excel(excelFileName)
-        plt.close(fig)
+            if self.save_figure_checkbox.isChecked():
+                fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.svg'))
+                file_format = fileName.split('.')[-1]
+                fig1 = Figure()
+                ax1f1 = fig1.add_subplot(111)
+                for item in (sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)).get_xticklabels():
+                    item.set_rotation(90)
+                fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.12)
+                self.addmpl(fig1)
+                fig1.savefig(fileName, format=file_format)
+            else:
+                fig1 = Figure()
+                ax1f1 = fig1.add_subplot(111)
+                for item in (sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)).get_xticklabels():
+                    item.set_rotation(90)
+                fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.12)
+                self.addmpl(fig1)
 
     def ExportToExcel(self):
         fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.xlsx'))
@@ -551,6 +654,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
+    w = QWidget()
     window = MyApp()
     window.show()
     sys.exit(app.exec_())
