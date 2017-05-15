@@ -473,27 +473,6 @@
      <enum>Qt::ToolButtonTextBesideIcon</enum>
     </property>
    </widget>
-   <widget class="QLineEdit" name="z_cutoff">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>380</y>
-      <width>21</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>16</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>    0</string>
-    </property>
-    <property name="cursorPosition">
-     <number>5</number>
-    </property>
-   </widget>
    <widget class="QWidget" name="mplwindow" native="true">
     <property name="geometry">
      <rect>
@@ -747,9 +726,9 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>450</y>
+      <y>460</y>
       <width>181</width>
-      <height>91</height>
+      <height>81</height>
      </rect>
     </property>
     <property name="font">
@@ -768,15 +747,15 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>380</y>
+      <y>369</y>
       <width>61</width>
-      <height>20</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Arial</family>
-      <pointsize>14</pointsize>
+      <pointsize>13</pointsize>
       <weight>75</weight>
       <bold>true</bold>
       <underline>false</underline>
@@ -786,19 +765,19 @@
      <string>Z cut-off:</string>
     </property>
    </widget>
-   <widget class="QToolButton" name="z_cutoff_button">
+   <widget class="QToolButton" name="apply_button">
     <property name="geometry">
      <rect>
-      <x>330</x>
-      <y>380</y>
-      <width>81</width>
-      <height>21</height>
+      <x>350</x>
+      <y>370</y>
+      <width>61</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Arial</family>
-      <pointsize>13</pointsize>
+      <pointsize>12</pointsize>
       <weight>75</weight>
       <bold>true</bold>
      </font>
@@ -813,18 +792,18 @@
     <property name="iconSize">
      <size>
       <width>20</width>
-      <height>20</height>
+      <height>15</height>
      </size>
     </property>
     <property name="toolButtonStyle">
-     <enum>Qt::ToolButtonTextBesideIcon</enum>
+     <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
    <widget class="QToolButton" name="reset_data_button">
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>420</y>
+      <y>430</y>
       <width>131</width>
       <height>21</height>
      </rect>
@@ -1048,24 +1027,11 @@
      <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
-   <widget class="Line" name="line">
-    <property name="geometry">
-     <rect>
-      <x>227</x>
-      <y>360</y>
-      <width>181</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-   </widget>
    <widget class="Line" name="line_2">
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>400</y>
+      <y>410</y>
       <width>181</width>
       <height>20</height>
      </rect>
@@ -1230,6 +1196,25 @@
      <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
+   <widget class="QDoubleSpinBox" name="z_cutoff_box">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>370</y>
+      <width>51</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::RightToLeft</enum>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="singleStep">
+     <double>0.500000000000000</double>
+    </property>
+   </widget>
    <zorder>label</zorder>
    <zorder>horizontalLayoutWidget</zorder>
    <zorder>project_choice_menu</zorder>
@@ -1246,7 +1231,6 @@
    <zorder>metadata_display_box</zorder>
    <zorder>loaded_targets_list</zorder>
    <zorder>plot_hist_button</zorder>
-   <zorder>z_cutoff</zorder>
    <zorder>mplwindow</zorder>
    <zorder>generate_scatterplot_button</zorder>
    <zorder>log_display_box</zorder>
@@ -1258,7 +1242,7 @@
    <zorder>quitButton</zorder>
    <zorder>data_status_box</zorder>
    <zorder>label_4</zorder>
-   <zorder>z_cutoff_button</zorder>
+   <zorder>apply_button</zorder>
    <zorder>reset_data_button</zorder>
    <zorder>heatmap_windowed_checkbox</zorder>
    <zorder>gene_search_input</zorder>
@@ -1267,13 +1251,13 @@
    <zorder>add_to_list_button</zorder>
    <zorder>search_results_list</zorder>
    <zorder>clear_results_button</zorder>
-   <zorder>line</zorder>
    <zorder>line_2</zorder>
    <zorder>save_figure_checkbox</zorder>
    <zorder>select_all_button</zorder>
    <zorder>open_ensembl_page</zorder>
    <zorder>label_6</zorder>
    <zorder>open_uniprot_page</zorder>
+   <zorder>z_cutoff_box</zorder>
   </widget>
   <action name="actionExit">
    <property name="text">

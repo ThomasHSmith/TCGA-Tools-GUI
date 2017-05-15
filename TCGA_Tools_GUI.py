@@ -24,6 +24,8 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     global canvasFull, log2Opt, ZScoreOpt, ZCutOffOpt, controlsOnly, tumorsOnly
     global data_dir, choices_dict, dataTransformed, get_sample_choice_df
+    global haveScatter, haveHeatmap, haveHistogram
+
     # Default values for checkbox bools
     ZScoreOpt = False
     data_dir = '/Users/TS_MBP/TCGA_Pickles'
@@ -33,7 +35,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     controlsOnly = False
     tumorsOnly = False
     dataTransformed = False
-
+    haveScatter, haveHeatmap, haveHistogram = False, False, False
 
     def __init__(self):
         global choices_dict
@@ -49,7 +51,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.plot_hist_button.clicked.connect(self.PlotHist)
         self.log2_button.clicked.connect(self.Log2Transform)
         self.z_score_button.clicked.connect(self.ZScore)
-        self.z_cutoff_button.clicked.connect(self.ZCutOff)
+        self.z_cutoff_box.valueChanged.connect(self.ZCutOff)
+        self.apply_button.clicked.connect(self.apply_clicked)
         self.generate_heatmap_button.clicked.connect(self.GenerateHeatMap)
         self.reset_data_button.clicked.connect(self.ResetData)
         self.generate_scatterplot_button.clicked.connect(self.GenerateScatterPlot)
@@ -62,7 +65,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.open_ensembl_page.clicked.connect(self.OpenEnsemblPage)
         self.open_uniprot_page.clicked.connect(self.OpenUniprotPage)
         self.select_all_button.clicked.connect(self.SelectAllResults)
-
 
         L = os.listdir(data_dir)
         if len(L) > 0:
@@ -102,7 +104,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         log2Opt, ZScoreOpt = False, False
 
         self.data_status_box.addItem('Log2 transformed:\tNo')
-        self.data_status_box.addItem('Z-score:\t\tNo')
+        self.data_status_box.addItem('Z-score:\tNo')
         self.data_status_box.addItem('Z-score cut-off:\tNo')
 
         self.correlation_output_box.clear()
@@ -215,14 +217,18 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.log_display_box.appendPlainText("Extracting genes from main dataframe")
         targets_dict = {}
         IDs_ordered = []
+        not_found_dict = {}
         targets = str(self.gene_targets_editable_list.toPlainText())
         lines = targets.split('\n')
         for line in lines:
             words = line.split()
             gene_name = ' '.join(words[:1]).strip().rstrip()
             ensID = words[-1]
-            targets_dict[ensID] = gene_name
-            IDs_ordered.append(ensID)
+            if ensID in df.columns:
+                targets_dict[ensID] = gene_name
+                IDs_ordered.append(ensID)
+            else:
+                not_found_dict[gene_name] = ensID
         haveData = True
         METADATA_COLS = ['PtID','TumorStage','TumorStageStr','SampleType']
         df_targets = df[IDs_ordered+METADATA_COLS].copy()
@@ -238,6 +244,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         for column in df_targets:
             self.loaded_targets_list.addItem(column)
 
+        if len(not_found_dict) > 0:
+            missing = ''
+            for key in not_found_dict:
+                missing = missing+key+': '+not_found_dict[key]+'\n'
+            self.show_msg_box('Some Ensembl IDs not found in dataset', missing)
 
     def SearchForGeneIDs(self):
         self.search_results_list.clear()
@@ -349,9 +360,12 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
     def ZCutOff(self):
         global ZCutOffOpt
-        Z_CUTOFF = int(self.z_cutoff.text())
-        if Z_CUTOFF != 0:
+        Z_CUTOFF = float(self.z_cutoff_box.value())
+        if Z_CUTOFF != 0.0:
             ZCutOffOpt = True
+            self.TransformData()
+        else:
+            ZCutOffOpt = False
             self.TransformData()
 
     def addmpl(self, fig):
@@ -384,19 +398,17 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         mbox.setStandardButtons(QMessageBox.Ok)
         mbox.exec_()
 
-
-
     def ResetData(self):
         global log2Opt, ZScoreOpt, ZCutOffOpt, dataTransformed
-        dataTransformed, log2Opt, ZSoreOpt, ZCutOffOpt = False, False, False, False
+        dataTransformed, log2Opt, ZScoreOpt, ZCutOffOpt = False, False, False, False
         log2Msg = 'Log2 transformed:\tNo'
-        ZScoreMsg = 'Z-score:\t\tNo'
+        ZScoreMsg = 'Z-score:\tNo'
         ZCutOffMsg = 'Z-score cut-off:\tNo'
         self.data_status_box.clear()
         self.data_status_box.addItem(log2Msg)
         self.data_status_box.addItem(ZScoreMsg)
         self.data_status_box.addItem(ZCutOffMsg)
-        self.z_cutoff.setText('0')
+        self.z_cutoff_box.setValue(0.0)
         self.log_display_box.appendPlainText("Raw data restored")
         self.TransformData()
 
@@ -407,32 +419,21 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             msg='Stage %s: %s' % (key, stages_str_dict[key])
             self.stage_selection_box.addItem(msg)
 
+    def apply_clicked(self):
+        if haveScatter:
+            self.GenerateScatterPlot()
+            return
+        elif haveHeatmap:
+            self.GenerateHeatMap()
+            return
+        elif haveHistogram:
+            self.PlotHist()
+
     def TransformData(self):
         global df_targets, df_transformed, dataTransformed
         global df_targets_controls, df_targets_tumors
         global df_controls_trans, df_tumors_trans
         global log2Opt, ZScoreOpt, ZCutOffOpt, dataTransformed
-        #TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
-        if log2Opt:
-            log2Msg = 'Log2 transformed:\tYes'
-        else:
-            log2Msg = 'Log2 transformed:\tNo'
-
-        if ZScoreOpt:
-            ZScoreMsg = 'Z-score:\tYes'
-            Z_CUTOFF = int(self.z_cutoff.text())
-            if Z_CUTOFF != 0:
-                ZCutOffMsg = 'Z-score cut-off:\t%d' % Z_CUTOFF
-            else:
-                ZCutOffMsg = 'Z-score cut-off:\tNo'
-        else:
-            ZScoreMsg = 'Z-score:\tNo'
-            ZCutOffMsg = 'Z-score cut-off:\tNo'
-
-        self.data_status_box.clear()
-        self.data_status_box.addItem(log2Msg)
-        self.data_status_box.addItem(ZScoreMsg)
-        self.data_status_box.addItem(ZCutOffMsg)
 
         df_transformed = df_targets.copy()
         df_controls_trans = df_targets_controls.copy()
@@ -440,27 +441,28 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
         value_cols = list(df_transformed.select_dtypes(exclude=['object']))
 
-        if log2Opt:
+        if log2Opt == True:
             df_transformed[value_cols] = df_transformed[value_cols].apply(lambda x: np.log2(x+1))
             df_controls_trans[value_cols] = df_controls_trans[value_cols].apply(lambda x: np.log2(x+1))
             df_tumors_trans[value_cols] = df_tumors_trans[value_cols].apply(lambda x: np.log2(x+1))
             dataTransformed = True
 
-        if ZScoreOpt:
+        if ZScoreOpt == True:
             dataTransformed = True
             df_transformed[value_cols] = df_transformed[value_cols].apply(stats.zscore)
             df_controls_trans[value_cols] = df_controls_trans[value_cols].apply(stats.zscore)
             df_tumors_trans[value_cols] = df_tumors_trans[value_cols].apply(stats.zscore)
-            Z_CUTOFF = int(self.z_cutoff.text())
-            if Z_CUTOFF != 0:
-                df_transformed = df_transformed[~(df_transformed[value_cols] > Z_CUTOFF).any(axis=1)]
-                df_transformed = df_transformed[~(df_transformed[value_cols] < -Z_CUTOFF).any(axis=1)]
+            if ZCutOffOpt == True:
+                Z_CUTOFF = float(self.z_cutoff_box.value())
+                if Z_CUTOFF != 0.0:
+                    df_transformed = df_transformed[~(df_transformed[value_cols] > Z_CUTOFF).any(axis=1)]
+                    df_transformed = df_transformed[~(df_transformed[value_cols] < -Z_CUTOFF).any(axis=1)]
 
-                df_controls_trans = df_controls_trans[~(df_controls_trans[value_cols] > Z_CUTOFF).any(axis=1)]
-                df_controls_trans = df_controls_trans[~(df_controls_trans[value_cols] < -Z_CUTOFF).any(axis=1)]
+                    df_controls_trans = df_controls_trans[~(df_controls_trans[value_cols] > Z_CUTOFF).any(axis=1)]
+                    df_controls_trans = df_controls_trans[~(df_controls_trans[value_cols] < -Z_CUTOFF).any(axis=1)]
 
-                df_tumors_trans = df_tumors_trans[~(df_tumors_trans[value_cols] > Z_CUTOFF).any(axis=1)]
-                df_tumors_trans = df_tumors_trans[~(df_tumors_trans[value_cols] < -Z_CUTOFF).any(axis=1)]
+                    df_tumors_trans = df_tumors_trans[~(df_tumors_trans[value_cols] > Z_CUTOFF).any(axis=1)]
+                    df_tumors_trans = df_tumors_trans[~(df_tumors_trans[value_cols] < -Z_CUTOFF).any(axis=1)]
 
         df_transformed = df_transformed.drop('PtID', axis=1)
         df_controls_trans = df_controls_trans.drop('PtID', axis=1)
@@ -478,6 +480,31 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
         self.log_display_box.appendPlainText("Finished transforming data")
 
+        if log2Opt == True:
+            log2Msg = 'Log2 transformed:\tYes'
+        elif log2Opt == False:
+            log2Msg = 'Log2 transformed:\tNo'
+
+        if ZScoreOpt == True:
+            ZScoreMsg = 'Z-score:\tYes'
+            if ZCutOffOpt == True:
+                Z_CUTOFF = float(self.z_cutoff_box.value())
+                if Z_CUTOFF == 0.0:
+                    ZCutOffMsg = 'Z-score cut-off:\tNo'
+                    ZCutOffOpt = False
+                else:
+                    ZCutOffMsg = 'Z-score cut-off:\t%f' % Z_CUTOFF
+        elif ZScoreOpt == False:
+            ZScoreMsg = 'Z-score:\tNo'
+            ZCutOffMsg = 'Z-score cut-off:\tNo'
+            ZCutOffOpt = False
+
+        self.data_status_box.clear()
+        self.data_status_box.addItem(log2Msg)
+        self.data_status_box.addItem(ZScoreMsg)
+        self.data_status_box.addItem(ZCutOffMsg)
+
+
     def get_sample_choice_df(self, force_raw=False):
         global dataTransformed
         stage_choices = [(str(x.text()).split(':')[0].split(' ')[1]) for x in self.stage_selection_box.selectedItems()]
@@ -490,45 +517,45 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             if dataTransformed == True:
                 if force_raw == False:
                     df_out = df_transformed[df_transformed.TumorStageStr.isin(stage_choices)].copy()
-                    self.UpdateStagesList(df_out)
+                    #self.UpdateStagesList(df_out)
                     return (df_out, 'all samples (transformed)')
                 elif force_raw == True:
                     df_out = df_targets[df_targets.TumorStageStr.isin(stage_choices)].copy()
-                    self.UpdateStagesList(df_out)
+                    #self.UpdateStagesList(df_out)
                     return (df_out, 'all samples (untransformed)')
             elif dataTransformed == False:
                 df_out = df_targets[df_targets.TumorStageStr.isin(stage_choices)].copy()
-                self.UpdateStagesList(df_out)
+                #self.UpdateStagesList(df_out)
                 return (df_out, 'all samples (untransformed)')
 
         elif sample_choice == ctrl_samples_label:
             if dataTransformed == True:
                 if force_raw == False:
                     df_out = df_controls_trans[df_controls_trans.TumorStageStr.isin(stage_choices)].copy()
-                    self.UpdateStagesList(df_out)
+                    #self.UpdateStagesList(df_out)
                     return (df_controls_trans[df_controls_trans.TumorStageStr.isin(stage_choices)].copy(), 'control samples only (transformed)')
                 elif force_raw == True:
                     df_out = df_targets_controls[df_targets_controls.TumorStageStr.isin(stage_choices)].copy()
-                    self.UpdateStagesList(df_out)
+                    #self.UpdateStagesList(df_out)
                     return (df_out, 'control samples only (untransformed)')
             elif dataTransformed == False:
                 df_out = df_targets_controls[df_targets_controls.TumorStageStr.isin(stage_choices)].copy()
-                self.UpdateStagesList(df_out)
+                #self.UpdateStagesList(df_out)
                 return (df_out, 'control samples only (untransformed)')
 
         elif sample_choice == tumor_samples_label:
             if dataTransformed == True:
                 if force_raw == False:
                     df_out = df_tumors_trans[df_tumors_trans.TumorStageStr.isin(stage_choices)].copy()
-                    self.UpdateStagesList(df_out)
+                    #self.UpdateStagesList(df_out)
                     return (df_out, 'tumor samples only (transformed)')
                 elif force_raw == True:
                     df_out = df_targets_tumors[df_targets_tumors.TumorStageStr.isin(stage_choices)].copy()
-                    self.UpdateStagesList(df_out)
+                    #self.UpdateStagesList(df_out)
                     return (df_out, 'tumor samples only (untransformed)')
             elif dataTransformed == False:
                 df_out = df_targets_tumors[df_targets_tumors.TumorStageStr.isin(stage_choices)].copy()
-                self.UpdateStagesList(df_out)
+                #self.UpdateStagesList(df_out)
                 return (df_out, 'tumor samples only (untransformed)')
 
     def CalculateCorrelation(self):
@@ -582,16 +609,22 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
 
     def PlotHist(self):
-        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
-        fig1 = Figure()
-        ax1f1 = fig1.add_subplot(111)
-        df_temp, samp_choice = get_sample_choice_df(self)
-        print 'Loaded %s' % samp_choice
-        ax1f1.hist(df_temp[TARGET_GENE])
-        self.addmpl(fig1)
-        print TARGET_GENE
+        global haveScatter, haveHeatmap, haveHistogram
+        if ((self.loaded_targets_list.count() == 0) | (self.loaded_targets_list.currentItem() == None)):
+            self.show_msg_box('Select a gene to plot', 'A gene must be selected from the list of loaded genes in order to generate histogram')
+        else:
+            TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
+            fig1 = Figure()
+            ax1f1 = fig1.add_subplot(111)
+            df_temp, samp_choice = get_sample_choice_df(self)
+            print 'Loaded %s' % samp_choice
+            ax1f1.hist(df_temp[TARGET_GENE])
+            self.addmpl(fig1)
+            haveScatter, haveHeatmap, haveHistogram = False, False, True
+            print TARGET_GENE
 
     def GenerateScatterPlot(self):
+        global haveScatter, haveHeatmap, haveHistogram
         if self.loaded_targets_list.count() == 0:
             self.show_msg_box('Select two genes to plot', 'Two genes must be selected from the list of loaded genes in order to generate scatterplot')
         else:
@@ -600,43 +633,32 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
                 gene_x = str(selected_genes[0].text())
                 gene_y = str(selected_genes[1].text())
                 df_temp, samp_choice = get_sample_choice_df(self)
-                if self.heatmap_windowed_checkbox.isChecked():
-                    sns.jointplot(x=gene_x, y=gene_y, data=df_temp, kind='reg', size=10, space=0)
-                    plt.show()
+                #if self.heatmap_windowed_checkbox.isChecked():
+                #    sns.jointplot(x=gene_x, y=gene_y, data=df_temp, kind='reg', size=10, space=0)
+                #    plt.show()
+                #else:
+                if self.save_figure_checkbox.isChecked():
+                    fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.svg'))
+                    file_format = fileName.split('.')[-1]
+                    fig1 = Figure()
+                    ax1f1 = fig1.add_subplot(111)
+                    ax1f1.scatter(x=gene_x, y=gene_y, data=df_temp)
+                    ax1f1.set(xlabel=gene_x, ylabel=gene_y)
+                    self.addmpl(fig1)
+                    fig1.savefig(fileName, format=file_format)
+                    haveScatter, haveHeatmap, haveHistogram = True, False, True
                 else:
-                    if self.save_figure_checkbox.isChecked():
-                        fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.svg'))
-                        file_format = fileName.split('.')[-1]
-                        fig1 = Figure()
-                        ax1f1 = fig1.add_subplot(111)
-                        ax1f1.scatter(x=gene_x, y=gene_y, data=df_temp)
-                        self.addmpl(fig1)
-                        fig1.savefig(fileName, format=file_format)
-
-                    else:
-                        fig1 = Figure()
-                        ax1f1 = fig1.add_subplot(111)
-                        ax1f1.scatter(x=gene_x, y=gene_y, data=df_temp)
-                        self.addmpl(fig1)
+                    fig1 = Figure()
+                    ax1f1 = fig1.add_subplot(111)
+                    ax1f1.scatter(x=gene_x, y=gene_y, data=df_temp)
+                    ax1f1.set(xlabel=gene_x, ylabel=gene_y)
+                    self.addmpl(fig1)
+                    haveScatter, haveHeatmap, haveHistogram = True, False, True
             else:
                 self.show_msg_box('Select two genes to plot', 'At least two genes must be selected from the list of loaded genes in order to generate scatterplot')
 
-    def GeneratelmPlot(self):
-        selected_genes = self.loaded_targets_list.selectedItems()
-        if len(selected_genes) == 2:
-            gene_x = str(selected_genes[0].text())
-            gene_y = str(selected_genes[1].text())
-            df_temp, samp_choice = get_sample_choice_df(self)
-            self.log_display_box.appendPlainText(("Generated lm plot for %s and %s from %s" % (gene_x, gene_y, samp_choice)) )
-            sns.lmplot(x=gene_x, y=gene_y, data=df_transformed, hue='TumorStage',palette='Set1', size=10)
-            plt.show()
-
-        else:
-            print 'Select only 2 genes'
-            self.log_display_box.appendPlainText('Select only 2 genes')
-
-
     def GenerateHeatMap(self):
+        global haveScatter, haveHeatmap, haveHistogram
         if self.loaded_targets_list.count() == 0:
             self.show_msg_box('Select a target gene!', 'Select a gene from the list of loaded genes to serve as your gene of interest.  Target gene will appear first on the heatmap and samples (rows) will be sorted by target gene values.')
             return
@@ -660,11 +682,13 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
                 file_format = fileName.split('.')[-1]
                 fig1 = Figure()
                 ax1f1 = fig1.add_subplot(111)
+                haveScatter, haveHeatmap, haveHistogram = False, True, True
                 for item in (sns.heatmap(df_temp.select_dtypes(exclude=['object']),yticklabels=False, xticklabels=True, ax=ax1f1)).get_xticklabels():
                     item.set_rotation(90)
                 fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.12)
                 self.addmpl(fig1)
                 fig1.savefig(fileName, format=file_format)
+                haveScatter, haveHeatmap, haveHistogram = False, True, True
             else:
                 fig1 = Figure()
                 ax1f1 = fig1.add_subplot(111)
@@ -672,23 +696,15 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
                     item.set_rotation(90)
                 fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.12)
                 self.addmpl(fig1)
+                haveScatter, haveHeatmap, haveHistogram = False, True, True
+
 
     def ExportToExcel(self):
         fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.xlsx'))
-        TARGET_GENE = str(self.loaded_targets_list.currentItem().text())
         df_temp, samp_choice = get_sample_choice_df(self)
-
-#        if dataTransformed:
-#            df_temp = df_transformed.copy()
-#        else:
-#            df_temp = df_targets.copy()
-        target_col = df_temp[TARGET_GENE]
-        df_temp = df_temp.drop(labels=[TARGET_GENE], axis=1)
-        df_temp.insert(0, TARGET_GENE, target_col)
-        df_temp = df_temp.sort_values(TARGET_GENE, ascending=False)
         baseFileName = fileName.split('.')[0]
         excelFileName = '%s.xlsx' % baseFileName
-        df_temp.to_excel(excelFileName)
+        df_temp.to_excel(excelFileName, index=False)
         self.log_display_box.appendPlainText(("Saved %s data to Excel table as %s" % (samp_choice, excelFileName)))
 
 if __name__ == "__main__":
