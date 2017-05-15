@@ -567,7 +567,7 @@
       <x>230</x>
       <y>550</y>
       <width>551</width>
-      <height>101</height>
+      <height>201</height>
      </rect>
     </property>
     <property name="font">
@@ -933,7 +933,7 @@
       <x>150</x>
       <y>520</y>
       <width>71</width>
-      <height>31</height>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
@@ -954,20 +954,20 @@
     <property name="iconSize">
      <size>
       <width>20</width>
-      <height>30</height>
+      <height>20</height>
      </size>
     </property>
     <property name="toolButtonStyle">
-     <enum>Qt::ToolButtonTextBesideIcon</enum>
+     <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
    <widget class="QToolButton" name="add_to_list_button">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>650</y>
-      <width>111</width>
-      <height>31</height>
+      <x>150</x>
+      <y>560</y>
+      <width>71</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
@@ -979,7 +979,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Add selection</string>
+     <string>Add selected</string>
     </property>
     <property name="icon">
      <iconset>
@@ -992,16 +992,16 @@
      </size>
     </property>
     <property name="toolButtonStyle">
-     <enum>Qt::ToolButtonTextBesideIcon</enum>
+     <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
    <widget class="QListWidget" name="search_results_list">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>550</y>
-      <width>111</width>
-      <height>101</height>
+      <y>560</y>
+      <width>141</width>
+      <height>121</height>
      </rect>
     </property>
     <property name="font">
@@ -1017,10 +1017,10 @@
    <widget class="QToolButton" name="clear_results_button">
     <property name="geometry">
      <rect>
-      <x>120</x>
-      <y>680</y>
-      <width>111</width>
-      <height>31</height>
+      <x>150</x>
+      <y>640</y>
+      <width>71</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
@@ -1032,7 +1032,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Clear results</string>
+     <string>Clear all</string>
     </property>
     <property name="icon">
      <iconset>
@@ -1040,12 +1040,12 @@
     </property>
     <property name="iconSize">
      <size>
-      <width>25</width>
-      <height>25</height>
+      <width>20</width>
+      <height>20</height>
      </size>
     </property>
     <property name="toolButtonStyle">
-     <enum>Qt::ToolButtonTextBesideIcon</enum>
+     <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
    <widget class="Line" name="line">
@@ -1106,50 +1106,13 @@
      </size>
     </property>
    </widget>
-   <widget class="QToolButton" name="open_uniprot_page">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>620</y>
-      <width>91</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>Arial</family>
-      <pointsize>11</pointsize>
-      <weight>75</weight>
-      <bold>true</bold>
-     </font>
-    </property>
-    <property name="layoutDirection">
-     <enum>Qt::RightToLeft</enum>
-    </property>
-    <property name="text">
-     <string>Uniprot</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>icons/uniprotlogo.png</normaloff>icons/uniprotlogo.png</iconset>
-    </property>
-    <property name="iconSize">
-     <size>
-      <width>50</width>
-      <height>55</height>
-     </size>
-    </property>
-    <property name="toolButtonStyle">
-     <enum>Qt::ToolButtonTextUnderIcon</enum>
-    </property>
-   </widget>
    <widget class="QToolButton" name="select_all_button">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>680</y>
-      <width>111</width>
-      <height>31</height>
+      <x>150</x>
+      <y>600</y>
+      <width>71</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
@@ -1169,21 +1132,21 @@
     </property>
     <property name="iconSize">
      <size>
-      <width>25</width>
-      <height>25</height>
+      <width>20</width>
+      <height>20</height>
      </size>
     </property>
     <property name="toolButtonStyle">
-     <enum>Qt::ToolButtonTextBesideIcon</enum>
+     <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
    <widget class="QToolButton" name="open_ensembl_page">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>570</y>
-      <width>91</width>
-      <height>41</height>
+      <x>10</x>
+      <y>680</y>
+      <width>111</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="font">
@@ -1203,8 +1166,8 @@
     </property>
     <property name="iconSize">
      <size>
-      <width>25</width>
-      <height>27</height>
+      <width>45</width>
+      <height>30</height>
      </size>
     </property>
     <property name="toolButtonStyle">
@@ -1214,36 +1177,57 @@
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>550</y>
-      <width>101</width>
+      <x>50</x>
+      <y>730</y>
+      <width>151</width>
       <height>20</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Arial</family>
-      <pointsize>12</pointsize>
+      <pointsize>14</pointsize>
       <weight>75</weight>
       <bold>true</bold>
-      <underline>true</underline>
+      <underline>false</underline>
      </font>
     </property>
     <property name="text">
-     <string>Open in browser</string>
+     <string>Open in web browser</string>
     </property>
    </widget>
-   <widget class="Line" name="line_3">
+   <widget class="QToolButton" name="open_uniprot_page">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>660</y>
-      <width>91</width>
-      <height>20</height>
+      <x>120</x>
+      <y>680</y>
+      <width>101</width>
+      <height>51</height>
      </rect>
     </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>11</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>UniProt</string>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>icons/uniprotlogo.png</normaloff>icons/uniprotlogo.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>60</width>
+      <height>45</height>
+     </size>
+    </property>
+    <property name="toolButtonStyle">
+     <enum>Qt::ToolButtonTextUnderIcon</enum>
     </property>
    </widget>
    <zorder>label</zorder>
@@ -1286,11 +1270,10 @@
    <zorder>line</zorder>
    <zorder>line_2</zorder>
    <zorder>save_figure_checkbox</zorder>
-   <zorder>open_uniprot_page</zorder>
    <zorder>select_all_button</zorder>
    <zorder>open_ensembl_page</zorder>
    <zorder>label_6</zorder>
-   <zorder>line_3</zorder>
+   <zorder>open_uniprot_page</zorder>
   </widget>
   <action name="actionExit">
    <property name="text">

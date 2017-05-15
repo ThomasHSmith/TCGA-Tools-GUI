@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, webbrowser, bs4, requests
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtGui import *
 import pandas as pd
@@ -59,15 +59,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.gene_search_button.clicked.connect(self.SearchForGeneIDs)
         self.add_to_list_button.clicked.connect(self.AddResultToGeneList)
         self.clear_results_button.clicked.connect(self.ClearSearchResults)
-open_ensembl_page
-open_uniprot_page
-select_all_button
-
-def OpenUniprotInBrowser(self, uniprotID):
-
-
-def OpenEnsemblInBrowser(self, ensID)
-
+        self.open_ensembl_page.clicked.connect(self.OpenEnsemblPage)
+        self.open_uniprot_page.clicked.connect(self.OpenUniprotPage)
+        self.select_all_button.clicked.connect(self.SelectAllResults)
 
 
         L = os.listdir(data_dir)
@@ -182,6 +176,37 @@ def OpenEnsemblInBrowser(self, ensID)
             self.gene_targets_editable_list.appendPlainText(gene_symbol + ' ' + ID)
         f.close()
 
+    def OpenEnsemblPage(self, ensID):
+        if self.search_results_list.count() == 0:
+            return
+        for item in self.search_results_list.selectedItems():
+            result = str(item.text())
+            print result
+            words = result.split()
+            gene_symbol = words[:-1]
+            ID = words[-1]
+            url = 'http://www.ensembl.org/id/%s' % ID
+            new = 2
+            webbrowser.open(url,new=new)
+
+    def OpenUniprotPage(self, ensID):
+        if self.search_results_list.count() == 0:
+            return
+        for item in self.search_results_list.selectedItems():
+            result = str(item.text())
+            print result
+            words = result.split()
+            gene_symbol = words[:-1]
+            ID = words[-1]
+            uniprot_IDs = self.get_uniprot_IDs(ID)
+            if len(uniprot_IDs) > 0:
+                for ID in uniprot_IDs:
+                    url = 'http://www.uniprot.org/uniprot/%s' % ID
+                    new = 2
+                    webbrowser.open(url,new=new)
+            else: show_msg_box('UniProt page not found','Could not find UniProt IDs associated with the given Ensembl ID.  Double check EnsemblID.')
+
+
     def ExtractTargets(self):
         global df_targets, df, df_targets_controls, df_targets_tumors, haveData
         if haveData == True:
@@ -214,8 +239,6 @@ def OpenEnsemblInBrowser(self, ensID)
             self.loaded_targets_list.addItem(column)
 
 
-#gene_search_input
-#search_results_list
     def SearchForGeneIDs(self):
         self.search_results_list.clear()
         search_targets = str(self.gene_search_input.toPlainText())
@@ -229,6 +252,11 @@ def OpenEnsemblInBrowser(self, ensID)
                     msg = '%s %s' % (key, res_dict[key])
                     self.search_results_list.addItem(msg)
 
+    def SelectAllResults(self):
+        if self.search_results_list.count() == 0:
+            return
+        for item in xrange(self.search_results_list.count()):
+            self.search_results_list.setCurrentItem(item)
 
     def AddResultToGeneList(self):
         for item in self.search_results_list.selectedItems():
@@ -262,7 +290,18 @@ def OpenEnsemblInBrowser(self, ensID)
     def ClearSearchResults(self):
         self.search_results_list.clear()
 
-
+    def get_uniprot_IDs(self, input_name):
+        url = 'http://www.ensembl.org/id/%s' % input_name
+        page = requests.get(url)
+        soup = bs4.BeautifulSoup(page.text)
+        a = soup.findAll('td')
+        IDs = []
+        for line in a:
+            words = str(line).split('http://www.uniprot.org/')
+            for word in words:
+                if word.find('uniprot/') != -1:
+                    IDs.append(word.strip().split('uniprot/')[1].split('"')[0])
+        return IDs
 
     def get_ensIDs(self, input_name):
         try:
