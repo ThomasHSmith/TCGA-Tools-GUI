@@ -18,7 +18,7 @@ import xml.dom.minidom
 from urllib2 import HTTPError
 from operator import itemgetter
 
-qtCreatorFile = "./TCGA_Tools_UI.ui"
+qtCreatorFile = "./UI_layout.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
