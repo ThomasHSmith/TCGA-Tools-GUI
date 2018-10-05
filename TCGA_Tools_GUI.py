@@ -343,6 +343,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             ensIDs = list(ensIDs)
             if len(ensIDs) > 1:
                 print '%d unique ENSG IDs found for %s (%s)' % (len(ensIDs), gene_name, uniprot_ID)
+                ids_dict[gene_name] = ensIDs[0].split(':')[1].split('.')[0]
+                print ids_dict
+                return ids_dict
             if len(ensIDs) == 1:
                 ids_dict[gene_name] = ensIDs[0]
         return ids_dict
