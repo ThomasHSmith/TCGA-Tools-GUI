@@ -272,8 +272,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def AddResultToGeneList(self):
         for item in self.search_results_list.selectedItems():
             result = str(item.text())
-        #results_to_add = [ str(x.text()) for x in self.search_results_list.selectedItems()]
-        #for result in results_to_add:
             if len(result) > 1:
                 words = result.split()
                 name=' '.join(words[:-1])
@@ -397,7 +395,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         mbox.setIcon(QMessageBox.Warning)
         mbox.setText(msg)
         mbox.setDetailedText(details)
-#        mbox.setInformativeText(details)
         mbox.setStandardButtons(QMessageBox.Ok)
         mbox.exec_()
 
@@ -520,45 +517,36 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             if dataTransformed == True:
                 if force_raw == False:
                     df_out = df_transformed[df_transformed.TumorStageStr.isin(stage_choices)].copy()
-                    #self.UpdateStagesList(df_out)
                     return (df_out, 'all samples (transformed)')
                 elif force_raw == True:
                     df_out = df_targets[df_targets.TumorStageStr.isin(stage_choices)].copy()
-                    #self.UpdateStagesList(df_out)
                     return (df_out, 'all samples (untransformed)')
             elif dataTransformed == False:
                 df_out = df_targets[df_targets.TumorStageStr.isin(stage_choices)].copy()
-                #self.UpdateStagesList(df_out)
                 return (df_out, 'all samples (untransformed)')
 
         elif sample_choice == ctrl_samples_label:
             if dataTransformed == True:
                 if force_raw == False:
                     df_out = df_controls_trans[df_controls_trans.TumorStageStr.isin(stage_choices)].copy()
-                    #self.UpdateStagesList(df_out)
                     return (df_controls_trans[df_controls_trans.TumorStageStr.isin(stage_choices)].copy(), 'control samples only (transformed)')
                 elif force_raw == True:
                     df_out = df_targets_controls[df_targets_controls.TumorStageStr.isin(stage_choices)].copy()
-                    #self.UpdateStagesList(df_out)
                     return (df_out, 'control samples only (untransformed)')
             elif dataTransformed == False:
                 df_out = df_targets_controls[df_targets_controls.TumorStageStr.isin(stage_choices)].copy()
-                #self.UpdateStagesList(df_out)
                 return (df_out, 'control samples only (untransformed)')
 
         elif sample_choice == tumor_samples_label:
             if dataTransformed == True:
                 if force_raw == False:
                     df_out = df_tumors_trans[df_tumors_trans.TumorStageStr.isin(stage_choices)].copy()
-                    #self.UpdateStagesList(df_out)
                     return (df_out, 'tumor samples only (transformed)')
                 elif force_raw == True:
                     df_out = df_targets_tumors[df_targets_tumors.TumorStageStr.isin(stage_choices)].copy()
-                    #self.UpdateStagesList(df_out)
                     return (df_out, 'tumor samples only (untransformed)')
             elif dataTransformed == False:
                 df_out = df_targets_tumors[df_targets_tumors.TumorStageStr.isin(stage_choices)].copy()
-                #self.UpdateStagesList(df_out)
                 return (df_out, 'tumor samples only (untransformed)')
 
     def CalculateCorrelation(self):
@@ -636,10 +624,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
                 gene_x = str(selected_genes[0].text())
                 gene_y = str(selected_genes[1].text())
                 df_temp, samp_choice = get_sample_choice_df(self)
-                #if self.heatmap_windowed_checkbox.isChecked():
-                #    sns.jointplot(x=gene_x, y=gene_y, data=df_temp, kind='reg', size=10, space=0)
-                #    plt.show()
-                #else:
                 if self.save_figure_checkbox.isChecked():
                     fileName = str(QtGui.QFileDialog.getSaveFileName(self, 'Save as...', '/Users/TS_MBP/Documents/GitHub/TCGA-Tools-GUI/', selectedFilter='*.svg'))
                     file_format = fileName.split('.')[-1]
